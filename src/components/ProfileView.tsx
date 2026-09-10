@@ -174,11 +174,11 @@ export function ProfileView({ user, onLogout, onRedirectToGigs }: Props) {
         <div className="max-w-2xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="relative group">
-              {user.photoURL ? (
+              {profile.profilePictureUrl || user.photoURL ? (
                 <img 
-                  src={user.photoURL} 
+                  src={profile.profilePictureUrl || user.photoURL || ''} 
                   alt={user.displayName || 'User'} 
-                  className="w-12 h-12 rounded-full shadow-md border-2 border-white"
+                  className="w-12 h-12 rounded-full shadow-md border-2 border-white object-cover"
                 />
               ) : (
                 <div className="w-12 h-12 bg-teal-100 rounded-full flex items-center justify-center text-teal-600 text-xl font-bold border-2 border-white">

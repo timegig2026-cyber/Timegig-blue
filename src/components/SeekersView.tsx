@@ -151,12 +151,16 @@ export function SeekersView({ hirerId }: Props) {
                       <button 
                         onClick={() => setViewerInfo({
                           isOpen: true,
-                          url: undefined, // In a real app, this would be seeker.profilePictureUrl
+                          url: seeker.profilePictureUrl,
                           title: `${seeker.firstName} ${seeker.surname}`
                         })}
                         className="w-14 h-14 bg-gray-100 rounded-full flex-shrink-0 flex items-center justify-center text-gray-400 border-2 border-white shadow-sm overflow-hidden active:scale-95 transition-transform"
                       >
-                        <User className="w-7 h-7" />
+                        {seeker.profilePictureUrl ? (
+                          <img src={seeker.profilePictureUrl} alt="Avatar" className="w-full h-full object-cover" />
+                        ) : (
+                          <User className="w-7 h-7" />
+                        )}
                       </button>
                       
                       <div className="flex-1 min-w-0">
