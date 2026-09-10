@@ -36,16 +36,26 @@ export default function App() {
   useEffect(() => {
     if (splashPhase === 'name') {
       const timer = setTimeout(() => {
-        setSplashPhase('slideshow');
+        // If auth check is done and user is logged in, skip slideshow
+        if (!authLoading && user) {
+          setSplashPhase('done');
+        } else {
+          setSplashPhase('slideshow');
+        }
       }, 3000); // 3s for name
       return () => clearTimeout(timer);
     } else if (splashPhase === 'slideshow') {
+      // If user logs in during slideshow, immediately skip
+      if (!authLoading && user) {
+        setSplashPhase('done');
+        return;
+      }
       const timer = setTimeout(() => {
         setSplashPhase('done');
       }, 17500); // 17.5s for slideshow (3.5s per job x 5 jobs)
       return () => clearTimeout(timer);
     }
-  }, [splashPhase]);
+  }, [splashPhase, user, authLoading]);
 
   const { incomingRequest, respondToRequest } = useHireRequests(user?.uid || '');
 

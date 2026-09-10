@@ -75,8 +75,29 @@ export function ProfileView({ user, onLogout, onRedirectToGigs }: Props) {
     fetchProfile();
   }, [user]);
 
+  const getDaysSinceUpdate = () => {
+    if (!profile.updatedAt) return null;
+    try {
+      // updatedAt might be a Firestore Timestamp or a Date string
+      const updatedDate = profile.updatedAt.toDate ? profile.updatedAt.toDate() : new Date(profile.updatedAt);
+      const diffTime = Math.abs(new Date().getTime() - updatedDate.getTime());
+      return Math.floor(diffTime / (1000 * 60 * 60 * 24));
+    } catch {
+      return null;
+    }
+  };
+
+  const daysSinceUpdate = getDaysSinceUpdate();
+  // Admins bypass this, and null means never submitted
+  const canUpdate = profile.isAdmin || daysSinceUpdate === null || daysSinceUpdate >= 5;
+  const daysUntilUpdate = canUpdate ? 0 : 5 - (daysSinceUpdate || 0);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!canUpdate) {
+      alert(`You can only update your profile every 5 days. Please try again in ${daysUntilUpdate} day(s).`);
+      return;
+    }
     if (!idFile && !profile.idDocumentName) {
       alert("ID Document is required!");
       return;
@@ -226,10 +247,23 @@ export function ProfileView({ user, onLogout, onRedirectToGigs }: Props) {
             </p>
           </motion.div>
         )}
+        {!canUpdate && (
+          <motion.div 
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mx-6 mt-4 p-4 bg-amber-50 border border-amber-100 rounded-xl flex items-start gap-3 shadow-sm max-w-2xl mx-auto w-full"
+          >
+            <AlertCircle className="w-5 h-5 text-amber-600 mt-0.5" />
+            <p className="text-sm text-amber-800 font-medium leading-relaxed">
+              <strong>Profile update locked.</strong> You can update your information again in {daysUntilUpdate} day{daysUntilUpdate === 1 ? '' : 's'}.
+            </p>
+          </motion.div>
+        )}
       </AnimatePresence>
 
       {/* Form */}
       <form onSubmit={handleSubmit} className="max-w-2xl mx-auto w-full px-6 py-8 flex flex-col gap-8">
+        <fieldset disabled={!canUpdate} className="flex flex-col gap-8 disabled:opacity-75">
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
           <div className="px-6 py-4 bg-gray-50/50 border-b border-gray-100">
             <h2 className="font-bold text-gray-800 flex items-center gap-2">
@@ -534,23 +568,27 @@ export function ProfileView({ user, onLogout, onRedirectToGigs }: Props) {
           </div>
         </div>
 
-        <button 
-          type="submit"
-          disabled={submitting}
-          className="w-full bg-teal-600 text-white py-4 rounded-2xl font-bold shadow-lg shadow-teal-600/20 hover:bg-teal-700 active:scale-[0.98] transition-all flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {submitting ? (
-            <>
-              <Loader2 className="w-5 h-5 animate-spin" />
-              Submitting Profile...
-            </>
-          ) : (
-            <>
-              Submit for Review
-              <CheckCircle className="w-5 h-5" />
-            </>
-          )}
-        </button>
+        </fieldset>
+
+        {canUpdate && (
+          <button 
+            type="submit"
+            disabled={submitting}
+            className="w-full bg-teal-600 text-white py-4 rounded-2xl font-bold shadow-lg shadow-teal-600/20 hover:bg-teal-700 active:scale-[0.98] transition-all flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {submitting ? (
+              <>
+                <Loader2 className="w-5 h-5 animate-spin" />
+                Submitting Profile...
+              </>
+            ) : (
+              <>
+                Submit for Review
+                <CheckCircle className="w-5 h-5" />
+              </>
+            )}
+          </button>
+        )}
       </form>
 
       {showSubscription && (
