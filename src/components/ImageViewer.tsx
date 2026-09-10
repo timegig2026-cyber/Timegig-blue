@@ -9,6 +9,8 @@ interface Props {
   title: string;
 }
 
+import { SafeImage } from './SafeImage';
+
 export function ImageViewer({ isOpen, onClose, imageUrl, title }: Props) {
   return (
     <AnimatePresence>
@@ -42,11 +44,11 @@ export function ImageViewer({ isOpen, onClose, imageUrl, title }: Props) {
             {/* Image Container */}
             <div className="flex-1 w-full flex items-center justify-center overflow-hidden rounded-3xl bg-gray-900 shadow-2xl">
               {imageUrl ? (
-                <img
+                <SafeImage
                   src={imageUrl}
                   alt={title}
                   className="max-w-full max-h-[80vh] object-contain"
-                  referrerPolicy="no-referrer"
+                  fallbackType="generic"
                 />
               ) : (
                 <div className="w-full h-[60vh] flex flex-col items-center justify-center text-gray-700 gap-4">

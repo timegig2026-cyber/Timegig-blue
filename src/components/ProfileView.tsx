@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { db, doc, getDoc, setDoc, serverTimestamp, handleFirestoreError, OperationType } from '../lib/firebase';
 import { UserProfile } from '../types';
 import { SubscriptionModal } from './SubscriptionModal';
+import { SafeImage } from './SafeImage';
 
 import { compressImage } from '../lib/imageUtils';
 
@@ -183,10 +184,11 @@ export function ProfileView({ user, onLogout, onRedirectToGigs }: Props) {
           <div className="flex items-center gap-3">
             <div className="relative group">
               {profile.profilePictureUrl || user.photoURL ? (
-                <img 
+                <SafeImage 
                   src={profile.profilePictureUrl || user.photoURL || ''} 
                   alt={user.displayName || 'User'} 
                   className="w-12 h-12 rounded-full shadow-md border-2 border-white object-cover"
+                  fallbackType="user"
                 />
               ) : (
                 <div className="w-12 h-12 bg-teal-100 rounded-full flex items-center justify-center text-teal-600 text-xl font-bold border-2 border-white">

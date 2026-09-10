@@ -75,5 +75,20 @@ export function useGigs() {
     }
   };
 
-  return { gigs, loading, applyForGig, completeGig };
+  const createGig = async (gigData: Omit<Gig, 'id'>) => {
+    const path = 'gigs';
+    try {
+      const gigsRef = collection(db, path);
+      await addDoc(gigsRef, {
+        ...gigData,
+        status: 'active',
+        timestamp: serverTimestamp()
+      });
+    } catch (error) {
+      handleFirestoreError(error, OperationType.CREATE, path);
+      throw error;
+    }
+  };
+
+  return { gigs, loading, applyForGig, completeGig, createGig };
 }

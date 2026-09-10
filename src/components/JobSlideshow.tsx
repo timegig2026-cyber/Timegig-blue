@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Sparkles, Leaf, Truck, Book, Wrench, Dog, Music } from 'lucide-react';
+import { SafeImage } from './SafeImage';
 
 const JOBS = [
   {
@@ -9,7 +10,7 @@ const JOBS = [
     icon: Sparkles,
     color: "text-teal-600",
     bg: "bg-teal-50",
-    image: "https://images.unsplash.com/photo-1581578731548-c64695ce6958?auto=format&fit=crop&q=80&w=1000"
+    image: "https://picsum.photos/seed/cleaning/1000/600"
   },
   {
     title: "Gardening",
@@ -17,7 +18,7 @@ const JOBS = [
     icon: Leaf,
     color: "text-green-600",
     bg: "bg-green-50",
-    image: "https://images.unsplash.com/photo-1585320806297-9794b3e4eeae?auto=format&fit=crop&q=80&w=1000"
+    image: "https://picsum.photos/seed/garden/1000/600"
   },
   {
     title: "Delivery",
@@ -25,7 +26,7 @@ const JOBS = [
     icon: Truck,
     color: "text-blue-600",
     bg: "bg-blue-50",
-    image: "https://images.unsplash.com/photo-1580674684081-7617fbf3d745?auto=format&fit=crop&q=80&w=1000"
+    image: "https://picsum.photos/seed/delivery/1000/600"
   },
   {
     title: "Handyman",
@@ -33,7 +34,7 @@ const JOBS = [
     icon: Wrench,
     color: "text-orange-600",
     bg: "bg-orange-50",
-    image: "https://images.unsplash.com/photo-1581244277943-fe4a9c777189?auto=format&fit=crop&q=80&w=1000"
+    image: "https://picsum.photos/seed/handyman/1000/600"
   },
   {
     title: "Tutoring",
@@ -41,7 +42,7 @@ const JOBS = [
     icon: Book,
     color: "text-purple-600",
     bg: "bg-purple-50",
-    image: "https://images.unsplash.com/photo-1434030216411-0b793f4b4173?auto=format&fit=crop&q=80&w=1000"
+    image: "https://picsum.photos/seed/tutor/1000/600"
   }
 ];
 
@@ -69,10 +70,11 @@ export function JobSlideshow() {
             className="space-y-6"
           >
             <div className="relative aspect-video rounded-[3rem] overflow-hidden shadow-2xl">
-              <img 
+              <SafeImage 
                 src={Job.image} 
                 alt={Job.title}
                 className="w-full h-full object-cover"
+                fallbackType="gig"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
               <div className="absolute bottom-6 left-8">

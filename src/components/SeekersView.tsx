@@ -5,6 +5,7 @@ import { useSeekers } from '../hooks/useSeekers';
 import { UserProfile, HireRequest } from '../types';
 import { db, doc, onSnapshot, updateDoc } from '../lib/firebase';
 import { ImageViewer } from './ImageViewer';
+import { SafeImage } from './SafeImage';
 
 const PROVINCES = [
   'Gauteng',
@@ -157,7 +158,7 @@ export function SeekersView({ hirerId }: Props) {
                         className="w-14 h-14 bg-gray-100 rounded-full flex-shrink-0 flex items-center justify-center text-gray-400 border-2 border-white shadow-sm overflow-hidden active:scale-95 transition-transform"
                       >
                         {seeker.profilePictureUrl ? (
-                          <img src={seeker.profilePictureUrl} alt="Avatar" className="w-full h-full object-cover" />
+                          <SafeImage src={seeker.profilePictureUrl} alt="Avatar" className="w-full h-full object-cover" fallbackType="user" />
                         ) : (
                           <User className="w-7 h-7" />
                         )}

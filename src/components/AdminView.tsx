@@ -3,6 +3,7 @@ import { Shield, CheckCircle, XCircle, Clock, Eye, User, FileText, Loader2, Arro
 import { db, collection, query, onSnapshot, setDoc, doc, getDocs, where, serverTimestamp } from '../lib/firebase';
 import { UserProfile, SubscriptionPayment } from '../types';
 import { ImageViewer } from './ImageViewer';
+import { SafeImage } from './SafeImage';
 import { compressImage } from '../lib/imageUtils';
 
 interface Props {
@@ -269,7 +270,7 @@ export function AdminView({ onBack }: Props) {
                       className="w-10 h-10 bg-teal-50 rounded-xl flex items-center justify-center text-teal-600 overflow-hidden cursor-pointer"
                     >
                       {p.profilePictureUrl ? (
-                        <img src={p.profilePictureUrl} alt="Avatar" className="w-full h-full object-cover" />
+                        <SafeImage src={p.profilePictureUrl} alt="Avatar" className="w-full h-full object-cover" fallbackType="user" />
                       ) : (
                         <User className="w-5 h-5" />
                       )}

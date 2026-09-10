@@ -5,12 +5,14 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Search, MapPin, ChevronDown, Check, LogIn, User } from 'lucide-react';
+import { Search, MapPin, ChevronDown, Check, LogIn, User, Plus, X, Image as ImageIcon } from 'lucide-react';
 import { useGigs } from '../hooks/useGigs';
 import { useAuth } from '../hooks/useAuth';
 import { db, doc, getDoc } from '../lib/firebase';
 import { UserProfile } from '../types';
 import { ImageViewer } from './ImageViewer';
+import { SafeImage } from './SafeImage';
+import { compressImage } from '../lib/imageUtils';
 
 const SA_LOCATIONS: Record<string, string[]> = {
   'Gauteng': ['Johannesburg', 'Pretoria', 'Midrand', 'Sandton', 'Centurion', 'Soweto', 'Kempton Park', 'Randburg'],
@@ -35,6 +37,7 @@ export interface Gig {
   lng: number;
   ownerId: string;
   status?: 'active' | 'completed';
+  imageUrl?: string;
 }
 
 interface GigsViewProps {
@@ -89,9 +92,18 @@ function OwnerAvatar({ ownerId, onClick }: { ownerId: string; onClick: (profile:
 
 export function GigsView({ onGigAccepted }: GigsViewProps) {
   const { user, login } = useAuth();
-  const { gigs, loading: gigsLoading, applyForGig, completeGig } = useGigs();
+  const { gigs, loading: gigsLoading, applyForGig, completeGig, createGig } = useGigs();
   
   const [showFilter, setShowFilter] = useState(false);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [newTitle, setNewTitle] = useState('');
+  const [newProvince, setNewProvince] = useState('Gauteng');
+  const [newLocation, setNewLocation] = useState('Johannesburg');
+  const [newPrice, setNewPrice] = useState('R350/hr');
+  const [newTagsStr, setNewTagsStr] = useState('General, In-Person');
+  const [newGigImageFile, setNewGigImageFile] = useState<File | null>(null);
+  const [creating, setCreating] = useState(false);
+
   const [selectedProvince, setSelectedProvince] = useState<string | null>(null);
   const [selectedLocation, setSelectedLocation] = useState<string | null>(null);
   const [applyingTo, setApplyingTo] = useState<string | null>(null);
@@ -99,6 +111,54 @@ export function GigsView({ onGigAccepted }: GigsViewProps) {
     isOpen: false,
     title: ''
   });
+
+  const handleCreateGig = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user) {
+      login();
+      return;
+    }
+    if (!newTitle.trim()) {
+      alert("Please enter a gig title.");
+      return;
+    }
+    setCreating(true);
+    try {
+      let imageUrl = '';
+      if (newGigImageFile) {
+        const reader = new FileReader();
+        const base64Promise = new Promise<string>((resolve, reject) => {
+          reader.onload = () => resolve(reader.result as string);
+          reader.onerror = reject;
+          reader.readAsDataURL(newGigImageFile);
+        });
+        const rawB64 = await base64Promise;
+        imageUrl = await compressImage(rawB64, 800, 0.6);
+      }
+
+      await createGig({
+        title: newTitle.trim(),
+        province: newProvince,
+        location: newLocation.trim() || newProvince,
+        price: newPrice.trim() || 'R300/hr',
+        tags: newTagsStr.split(',').map(t => t.trim()).filter(Boolean),
+        lat: -26.2041,
+        lng: 28.0473,
+        ownerId: user.uid,
+        status: 'active',
+        imageUrl: imageUrl || undefined
+      });
+      setShowCreateModal(false);
+      setNewTitle('');
+      setNewGigImageFile(null);
+      alert("GiG created successfully!");
+    } catch (error) {
+      console.error("Failed to create gig", error);
+      alert("Failed to create gig. Please check your connection.");
+    } finally {
+      setCreating(false);
+    }
+  };
 
   const handleApply = async (gig: Gig) => {
     if (!user) {
@@ -172,7 +232,21 @@ export function GigsView({ onGigAccepted }: GigsViewProps) {
           </div>
           
           <div className="flex items-center justify-between px-1">
-             <h3 className="text-xs font-bold text-gray-700 uppercase tracking-wider">Available GiGs</h3>
+             <div className="flex items-center gap-2">
+               <h3 className="text-xs font-bold text-gray-700 uppercase tracking-wider">Available GiGs</h3>
+               <button 
+                 onClick={() => {
+                   if (!user) {
+                     login();
+                     return;
+                   }
+                   setShowCreateModal(true);
+                 }}
+                 className="flex items-center gap-1 text-[11px] font-black uppercase tracking-wider text-white bg-teal-600 hover:bg-teal-700 px-3 py-1.5 rounded-full shadow-sm transition-all active:scale-95"
+               >
+                 <Plus className="w-3.5 h-3.5" /> Post GiG
+               </button>
+             </div>
              <button 
                onClick={() => setShowFilter(!showFilter)}
                className="flex items-center gap-1 text-xs font-semibold text-teal-600 bg-teal-50 px-3 py-1.5 rounded-full border border-teal-100 hover:bg-teal-100 transition-colors max-w-[200px] sm:max-w-xs truncate"
@@ -264,6 +338,16 @@ export function GigsView({ onGigAccepted }: GigsViewProps) {
                 <span>{gig.location}, {gig.province}</span>
               </div>
 
+              {gig.imageUrl && (
+                <div 
+                  onClick={() => setViewerInfo({ isOpen: true, url: gig.imageUrl, title: gig.title })}
+                  className="ml-11 mt-1 w-full max-w-xs h-32 rounded-xl overflow-hidden border border-gray-100 cursor-pointer group/img relative shadow-sm"
+                >
+                  <SafeImage src={gig.imageUrl} alt={gig.title} className="w-full h-full object-cover group-hover/img:scale-105 transition-transform" />
+                  <div className="absolute inset-0 bg-black/10 group-hover/img:bg-transparent transition-colors" />
+                </div>
+              )}
+
               <div className="flex justify-between items-center mt-1 ml-11">
                 <div className="flex flex-wrap gap-1.5">
                   {(gig.tags || []).slice(0, 2).map(tag => (
@@ -335,6 +419,139 @@ export function GigsView({ onGigAccepted }: GigsViewProps) {
         imageUrl={viewerInfo.url}
         title={viewerInfo.title}
       />
+
+      <AnimatePresence>
+        {showCreateModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+          >
+            <motion.div
+              initial={{ scale: 0.9, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.9, y: 20 }}
+              className="bg-white w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden border border-gray-100 flex flex-col max-h-[90vh]"
+            >
+              <div className="px-6 py-4 bg-gray-50 border-b border-gray-100 flex items-center justify-between">
+                <h3 className="font-black text-gray-900 uppercase tracking-wider text-sm flex items-center gap-2">
+                  <Plus className="w-4 h-4 text-teal-600" /> Post a New GiG
+                </h3>
+                <button 
+                  onClick={() => setShowCreateModal(false)}
+                  className="p-1 rounded-full text-gray-400 hover:bg-gray-200"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <form onSubmit={handleCreateGig} className="p-6 space-y-4 overflow-y-auto">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-gray-600 uppercase">GiG Title</label>
+                  <input 
+                    type="text"
+                    required
+                    value={newTitle}
+                    onChange={e => setNewTitle(e.target.value)}
+                    placeholder="e.g. Expert Graphic Designer Needed"
+                    className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-teal-600 font-medium"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-gray-600 uppercase">Province</label>
+                    <select
+                      value={newProvince}
+                      onChange={e => {
+                        setNewProvince(e.target.value);
+                        setNewLocation(SA_LOCATIONS[e.target.value]?.[0] || e.target.value);
+                      }}
+                      className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-teal-600 font-medium"
+                    >
+                      {Object.keys(SA_LOCATIONS).map(prov => (
+                        <option key={prov} value={prov}>{prov}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-gray-600 uppercase">Location / City</label>
+                    <select
+                      value={newLocation}
+                      onChange={e => setNewLocation(e.target.value)}
+                      className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-teal-600 font-medium"
+                    >
+                      {(SA_LOCATIONS[newProvince] || [newProvince]).map(loc => (
+                        <option key={loc} value={loc}>{loc}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-gray-600 uppercase flex items-center gap-2">
+                    <ImageIcon className="w-4 h-4 text-teal-600" /> GiG Image (Optional)
+                  </label>
+                  <input 
+                    type="file"
+                    accept="image/*"
+                    onChange={e => setNewGigImageFile(e.target.files?.[0] || null)}
+                    className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2 text-xs outline-none focus:border-teal-600 font-medium file:mr-4 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-teal-50 file:text-teal-700 hover:file:bg-teal-100"
+                  />
+                  {newGigImageFile && (
+                    <div className="relative w-16 h-16 rounded-xl overflow-hidden border border-gray-200 mt-1">
+                      <img src={URL.createObjectURL(newGigImageFile)} alt="Preview" className="w-full h-full object-cover" />
+                    </div>
+                  )}
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-gray-600 uppercase">Price / Budget</label>
+                  <input 
+                    type="text"
+                    required
+                    value={newPrice}
+                    onChange={e => setNewPrice(e.target.value)}
+                    placeholder="e.g. R450/hr or R2500/job"
+                    className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-teal-600 font-medium"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-gray-600 uppercase">Tags (comma separated)</label>
+                  <input 
+                    type="text"
+                    value={newTagsStr}
+                    onChange={e => setNewTagsStr(e.target.value)}
+                    placeholder="Design, Remote, Urgent"
+                    className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-teal-600 font-medium"
+                  />
+                </div>
+
+                <div className="pt-4 flex gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setShowCreateModal(false)}
+                    className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 py-3 rounded-xl text-xs font-black uppercase tracking-wider transition-all"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={creating}
+                    className="flex-1 bg-teal-600 hover:bg-teal-700 text-white py-3 rounded-xl text-xs font-black uppercase tracking-wider shadow-lg shadow-teal-600/20 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                  >
+                    {creating && <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />}
+                    Publish GiG
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
