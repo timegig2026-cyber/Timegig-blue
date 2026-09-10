@@ -88,20 +88,14 @@ export function ProfileView({ user, onLogout, onRedirectToGigs }: Props) {
     setSubmitting(true);
     setSubmitStep('submitting');
     try {
-      if (profilePicFile && profilePicFile.size > 150 * 1024) {
-        alert("Profile picture is too large. Please choose an image under 150KB.");
+      if (idFile && idFile.size > 2 * 1024 * 1024) {
+        alert("ID Document is too large. Please choose a file under 2MB.");
         setSubmitting(false);
         setSubmitStep('idle');
         return;
       }
-      if (idFile && idFile.size > 150 * 1024) {
-        alert("ID Document is too large. Please choose a file under 150KB.");
-        setSubmitting(false);
-        setSubmitStep('idle');
-        return;
-      }
-      if (cvFile && cvFile.size > 150 * 1024) {
-        alert("CV file is too large. Please choose a file under 150KB.");
+      if (cvFile && cvFile.size > 2 * 1024 * 1024) {
+        alert("CV file is too large. Please choose a file under 2MB.");
         setSubmitting(false);
         setSubmitStep('idle');
         return;

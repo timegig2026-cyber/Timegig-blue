@@ -16,7 +16,7 @@ export function BottomBar({ activeTab, onTabChange }: Props) {
   ];
 
   return (
-    <div className="absolute bottom-0 w-full bg-white/80 backdrop-blur-xl border-t border-gray-200/60 pb-2 pt-2 px-4 shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.1)] z-50">
+    <div className="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-xl border-t border-gray-200/60 pb-4 pt-2 px-4 shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.1)] z-50">
       <div className="flex justify-between items-end max-w-lg mx-auto h-12 px-2">
         {tabs.map((tab) => (
           <ThreeDIcon
