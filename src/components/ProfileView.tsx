@@ -120,24 +120,30 @@ export function ProfileView({ user, onLogout, onRedirectToGigs }: Props) {
         cvUrl = await compressImage(b64, 600, 0.5);
       }
 
-      const profileData: UserProfile = {
-        ...profile,
-        firstName: profile.firstName,
-        surname: profile.surname,
-        middleName: profile.middleName ?? '',
-        dob: profile.dob,
-        idDocumentName: idFile ? idFile.name : (profile.idDocumentName ?? ""),
-        idDocumentUrl,
-        profilePictureName: profilePicFile ? profilePicFile.name : (profile.profilePictureName ?? ""),
-        profilePictureUrl,
-        cvName: cvFile ? cvFile.name : (profile.cvName ?? ""),
-        cvUrl,
+      const profileData: any = {
+        firstName: profile.firstName || '',
+        surname: profile.surname || '',
+        middleName: profile.middleName || '',
+        dob: profile.dob || '',
+        province: profile.province || 'Gauteng',
+        isOnline: Boolean(profile.isOnline),
+        isAdmin: Boolean(profile.isAdmin),
+        idDocumentName: idFile ? idFile.name : (profile.idDocumentName || ''),
+        idDocumentUrl: idDocumentUrl || '',
+        profilePictureName: profilePicFile ? profilePicFile.name : (profile.profilePictureName || ''),
+        profilePictureUrl: profilePictureUrl || '',
+        cvName: cvFile ? cvFile.name : (profile.cvName || ''),
+        cvUrl: cvUrl || '',
         certificates: [...(profile.certificates || []), ...otherFiles.map(f => f.name)],
         status: profile.isAdmin ? 'reviewed' : 'pending',
         updatedAt: serverTimestamp()
       };
 
-      await setDoc(doc(db, 'profiles', user.uid), profileData);
+      if (profile.subscription) {
+        profileData.subscription = profile.subscription;
+      }
+
+      await setDoc(doc(db, 'profiles', user.uid), profileData, { merge: true });
       
       setSubmitStep('success');
       
@@ -153,7 +159,9 @@ export function ProfileView({ user, onLogout, onRedirectToGigs }: Props) {
       }
     } catch (error) {
       setSubmitStep('idle');
-      handleFirestoreError(error, OperationType.WRITE, `profiles/${user.uid}`);
+      setSubmitting(false);
+      console.error("Submission error:", error);
+      alert("Submission failed. Please check your internet connection and make sure files are under 2MB.");
     } finally {
       setSubmitting(false);
     }
