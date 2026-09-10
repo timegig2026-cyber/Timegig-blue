@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { db, collection, query, onSnapshot, addDoc, serverTimestamp, handleFirestoreError, OperationType } from '../lib/firebase';
+import { db, collection, query, onSnapshot, addDoc, updateDoc, doc, serverTimestamp, handleFirestoreError, OperationType } from '../lib/firebase';
 import { Gig } from '../components/GigsView';
 
 const MOCK_GIGS_DATA = [
@@ -66,5 +66,14 @@ export function useGigs() {
     }
   };
 
-  return { gigs, loading, applyForGig };
+  const completeGig = async (gigId: string) => {
+    try {
+      const gigRef = doc(db, 'gigs', gigId);
+      await updateDoc(gigRef, { status: 'completed' });
+    } catch (error) {
+      console.error("Failed to complete gig:", error);
+    }
+  };
+
+  return { gigs, loading, applyForGig, completeGig };
 }

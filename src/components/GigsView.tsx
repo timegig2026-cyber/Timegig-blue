@@ -34,6 +34,7 @@ export interface Gig {
   lat: number;
   lng: number;
   ownerId: string;
+  status?: 'active' | 'completed';
 }
 
 interface GigsViewProps {
@@ -88,7 +89,7 @@ function OwnerAvatar({ ownerId, onClick }: { ownerId: string; onClick: (profile:
 
 export function GigsView({ onGigAccepted }: GigsViewProps) {
   const { user, login } = useAuth();
-  const { gigs, loading: gigsLoading, applyForGig } = useGigs();
+  const { gigs, loading: gigsLoading, applyForGig, completeGig } = useGigs();
   
   const [showFilter, setShowFilter] = useState(false);
   const [selectedProvince, setSelectedProvince] = useState<string | null>(null);
@@ -272,17 +273,32 @@ export function GigsView({ onGigAccepted }: GigsViewProps) {
                   ))}
                 </div>
                 
-                <button
-                  onClick={() => handleApply(gig)}
-                  disabled={applyingTo === gig.id}
-                  className="flex items-center justify-center min-w-[70px] h-7 bg-gray-900 hover:bg-black active:scale-95 text-white text-[10px] font-black uppercase tracking-widest px-3 rounded-lg transition-all disabled:opacity-50"
-                >
-                  {applyingTo === gig.id ? (
-                    <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                {user && gig.ownerId === user.uid ? (
+                  gig.status === 'completed' ? (
+                    <span className="bg-green-100 text-green-700 text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-lg flex items-center gap-1">
+                      <Check className="w-3.5 h-3.5" /> Completed
+                    </span>
                   ) : (
-                    'Apply'
-                  )}
-                </button>
+                    <button
+                      onClick={() => completeGig(gig.id)}
+                      className="bg-teal-600 hover:bg-teal-700 active:scale-95 text-white text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-lg transition-all shadow-sm flex items-center gap-1"
+                    >
+                      <Check className="w-3.5 h-3.5" /> Mark Done
+                    </button>
+                  )
+                ) : (
+                  <button
+                    onClick={() => handleApply(gig)}
+                    disabled={applyingTo === gig.id}
+                    className="flex items-center justify-center min-w-[70px] h-7 bg-gray-900 hover:bg-black active:scale-95 text-white text-[10px] font-black uppercase tracking-widest px-3 rounded-lg transition-all disabled:opacity-50"
+                  >
+                    {applyingTo === gig.id ? (
+                      <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    ) : (
+                      'Apply'
+                    )}
+                  </button>
+                )}
               </div>
             </div>
           )) : (
