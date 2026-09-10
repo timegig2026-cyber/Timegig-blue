@@ -1,0 +1,103 @@
+{
+  "collections": {
+    "gigs": {
+      "description": "Available gigs across South Africa",
+      "schema": {
+        "title": "string",
+        "province": "string",
+        "location": "string",
+        "price": "string",
+        "tags": "array",
+        "lat": "number",
+        "lng": "number",
+        "ownerId": "string"
+      },
+      "rules": {
+        "read": "true",
+        "write": "request.auth != null"
+      }
+    },
+    "applications": {
+      "description": "User applications for gigs",
+      "schema": {
+        "gigId": "string",
+        "applicantId": "string",
+        "status": "string",
+        "timestamp": "timestamp"
+      },
+      "rules": {
+        "read": "request.auth != null && (request.auth.uid == resource.data.applicantId || request.auth.uid == get(/databases/$(database)/documents/gigs/$(resource.data.gigId)).data.ownerId)",
+        "write": "request.auth != null"
+      }
+    },
+    "profiles": {
+      "description": "Extended user profile information",
+      "schema": {
+        "firstName": "string",
+        "middleName": "string",
+        "surname": "string",
+        "dob": "string",
+        "profilePictureName": "string",
+        "idDocumentName": "string",
+        "cvName": "string",
+        "certificates": "array",
+        "province": "string",
+        "isOnline": "boolean",
+        "isAdmin": "boolean",
+        "status": "string",
+        "updatedAt": "timestamp"
+      },
+      "rules": {
+        "read": "request.auth != null",
+        "write": "request.auth != null && request.auth.uid == request.resource.id"
+      }
+    },
+    "hire_requests": {
+      "description": "Real-time hire requests for seekers",
+      "schema": {
+        "seekerId": "string",
+        "hirerId": "string",
+        "status": "string",
+        "createdAt": "timestamp",
+        "expiresAt": "timestamp"
+      },
+      "rules": {
+        "read": "request.auth != null && (request.auth.uid == resource.data.seekerId || request.auth.uid == resource.data.hirerId)",
+        "write": "request.auth != null"
+      }
+    },
+    "notifications": {
+      "description": "User notifications for new gigs and seekers",
+      "schema": {
+        "userId": "string",
+        "type": "string",
+        "title": "string",
+        "message": "string",
+        "timestamp": "timestamp",
+        "isRead": "boolean",
+        "relatedId": "string"
+      },
+      "rules": {
+        "read": "request.auth != null && request.auth.uid == resource.data.userId",
+        "write": "request.auth != null && request.auth.uid == request.resource.data.userId",
+        "delete": "request.auth != null && request.auth.uid == resource.data.userId"
+      }
+    },
+    "subscription_payments": {
+      "description": "User subscription payments and proofs",
+      "schema": {
+        "userId": "string",
+        "amount": "number",
+        "reference": "string",
+        "timestamp": "timestamp",
+        "status": "string",
+        "proofOfPaymentName": "string"
+      },
+      "rules": {
+        "read": "request.auth != null && (request.auth.uid == resource.data.userId || get(/databases/$(database)/documents/profiles/$(request.auth.uid)).data.isAdmin == true)",
+        "write": "request.auth != null && request.auth.uid == request.resource.data.userId",
+        "update": "request.auth != null && get(/databases/$(database)/documents/profiles/$(request.auth.uid)).data.isAdmin == true"
+      }
+    }
+  }
+}
