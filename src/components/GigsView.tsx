@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Search, MapPin, ChevronDown, Check, LogIn, User, Plus, X, Image as ImageIcon, Edit2, Trash2 } from 'lucide-react';
 import { useGigs } from '../hooks/useGigs';
