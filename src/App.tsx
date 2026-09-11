@@ -104,7 +104,7 @@ export default function App() {
           
           {/* Main Content Area */}
           <main 
-            className="flex-1 relative overflow-hidden transition-all duration-700 ease-in-out"
+            className="flex-1 relative overflow-y-auto transition-all duration-700 ease-in-out"
             style={{
               backgroundImage: wallpaper ? `url(${wallpaper})` : 'none',
               backgroundSize: 'cover',
@@ -120,7 +120,7 @@ export default function App() {
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.95 }}
                 transition={{ duration: 0.2, ease: "easeOut" }}
-                className="absolute inset-0 pb-16"
+                className="h-full w-full pb-20 relative"
               >
                 {content[activeTab as keyof typeof content]}
               </motion.div>

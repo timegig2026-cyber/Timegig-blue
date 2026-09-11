@@ -1,6 +1,7 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged, User, createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile } from 'firebase/auth';
 import { getFirestore, collection, addDoc, query, onSnapshot, updateDoc, doc, serverTimestamp, setDoc, getDoc, where, limit, getDocs, orderBy, deleteDoc } from 'firebase/firestore';
+import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 
 const firebaseConfig = {
   apiKey: "AIzaSyBpR2SyQnfBxjXRmpmKQaqhzVCoy2gs2Cg",
@@ -15,6 +16,7 @@ const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 // Use the custom database ID if specified in firebase-applet-config.json
 export const db = getFirestore(app, "ai-studio-gigsouthafrica-f6c36726-8075-49e9-85e2-ec3d17d7cee7");
+export const storage = getStorage(app);
 
 export const googleProvider = new GoogleAuthProvider();
 
@@ -65,5 +67,5 @@ export function handleFirestoreError(error: unknown, operationType: OperationTyp
   throw new Error(JSON.stringify(errInfo));
 }
 
-export { signInWithPopup, signOut, onAuthStateChanged, collection, addDoc, query, onSnapshot, updateDoc, doc, serverTimestamp, setDoc, getDoc, where, limit, getDocs, orderBy, deleteDoc, createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile };
+export { signInWithPopup, signOut, onAuthStateChanged, collection, addDoc, query, onSnapshot, updateDoc, doc, serverTimestamp, setDoc, getDoc, where, limit, getDocs, orderBy, deleteDoc, createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile, ref, uploadBytes, getDownloadURL };
 export type { User };
