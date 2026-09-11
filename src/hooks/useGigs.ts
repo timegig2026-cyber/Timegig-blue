@@ -75,6 +75,27 @@ export function useGigs() {
     }
   };
 
+  const updateGig = async (gigId: string, updates: Partial<Omit<Gig, 'id'>>) => {
+    try {
+      const gigRef = doc(db, 'gigs', gigId);
+      await updateDoc(gigRef, updates);
+    } catch (error) {
+      console.error("Failed to update gig:", error);
+      throw error;
+    }
+  };
+
+  const deleteGig = async (gigId: string) => {
+    try {
+      const { deleteDoc } = await import('firebase/firestore');
+      const gigRef = doc(db, 'gigs', gigId);
+      await deleteDoc(gigRef);
+    } catch (error) {
+      console.error("Failed to delete gig:", error);
+      throw error;
+    }
+  };
+
   const createGig = async (gigData: Omit<Gig, 'id'>) => {
     const path = 'gigs';
     try {
@@ -90,5 +111,5 @@ export function useGigs() {
     }
   };
 
-  return { gigs, loading, applyForGig, completeGig, createGig };
+  return { gigs, loading, applyForGig, completeGig, createGig, updateGig, deleteGig };
 }

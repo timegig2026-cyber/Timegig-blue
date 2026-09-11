@@ -5,7 +5,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Search, MapPin, ChevronDown, Check, LogIn, User, Plus, X, Image as ImageIcon } from 'lucide-react';
+import { Search, MapPin, ChevronDown, Check, LogIn, User, Plus, X, Image as ImageIcon, Edit2, Trash2 } from 'lucide-react';
 import { useGigs } from '../hooks/useGigs';
 import { useAuth } from '../hooks/useAuth';
 import { db, doc, getDoc } from '../lib/firebase';
@@ -92,10 +92,11 @@ function OwnerAvatar({ ownerId, onClick }: { ownerId: string; onClick: (profile:
 
 export function GigsView({ onGigAccepted }: GigsViewProps) {
   const { user, login } = useAuth();
-  const { gigs, loading: gigsLoading, applyForGig, completeGig, createGig } = useGigs();
+  const { gigs, loading: gigsLoading, applyForGig, completeGig, createGig, updateGig, deleteGig } = useGigs();
   
   const [showFilter, setShowFilter] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [editingGigId, setEditingGigId] = useState<string | null>(null);
   const [newTitle, setNewTitle] = useState('');
   const [newProvince, setNewProvince] = useState('Gauteng');
   const [newLocation, setNewLocation] = useState('Johannesburg');
@@ -112,7 +113,7 @@ export function GigsView({ onGigAccepted }: GigsViewProps) {
     title: ''
   });
 
-  const handleCreateGig = async (e: React.FormEvent) => {
+  const handleSaveGig = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) {
       login();
@@ -136,7 +137,7 @@ export function GigsView({ onGigAccepted }: GigsViewProps) {
         imageUrl = await compressImage(rawB64, 800, 0.6);
       }
 
-      await createGig({
+      const gigData = {
         title: newTitle.trim(),
         province: newProvince,
         location: newLocation.trim() || newProvince,
@@ -144,19 +145,53 @@ export function GigsView({ onGigAccepted }: GigsViewProps) {
         tags: newTagsStr.split(',').map(t => t.trim()).filter(Boolean),
         lat: -26.2041,
         lng: 28.0473,
-        ownerId: user.uid,
-        status: 'active',
-        imageUrl: imageUrl || undefined
-      });
+      };
+
+      if (editingGigId) {
+        await updateGig(editingGigId, {
+          ...gigData,
+          ...(imageUrl ? { imageUrl } : {})
+        });
+        alert("GiG updated successfully!");
+      } else {
+        await createGig({
+          ...gigData,
+          ownerId: user.uid,
+          status: 'active',
+          imageUrl: imageUrl || undefined
+        });
+        alert("GiG created successfully!");
+      }
+
       setShowCreateModal(false);
+      setEditingGigId(null);
       setNewTitle('');
       setNewGigImageFile(null);
-      alert("GiG created successfully!");
     } catch (error) {
-      console.error("Failed to create gig", error);
-      alert("Failed to create gig. Please check your connection.");
+      console.error("Failed to save gig", error);
+      alert("Failed to save gig. Please check your connection.");
     } finally {
       setCreating(false);
+    }
+  };
+
+  const openEditModal = (gig: Gig) => {
+    setEditingGigId(gig.id);
+    setNewTitle(gig.title);
+    setNewProvince(gig.province);
+    setNewLocation(gig.location);
+    setNewPrice(gig.price);
+    setNewTagsStr((gig.tags || []).join(', '));
+    setNewGigImageFile(null);
+    setShowCreateModal(true);
+  };
+
+  const handleDeleteGig = async (gigId: string) => {
+    if (!window.confirm("Are you sure you want to delete this gig?")) return;
+    try {
+      await deleteGig(gigId);
+    } catch (error) {
+      alert("Failed to delete gig.");
     }
   };
 
@@ -240,6 +275,13 @@ export function GigsView({ onGigAccepted }: GigsViewProps) {
                      login();
                      return;
                    }
+                   setEditingGigId(null);
+                   setNewTitle('');
+                   setNewProvince('Gauteng');
+                   setNewLocation('Johannesburg');
+                   setNewPrice('R350/hr');
+                   setNewTagsStr('General, In-Person');
+                   setNewGigImageFile(null);
                    setShowCreateModal(true);
                  }}
                  className="flex items-center gap-1 text-[11px] font-black uppercase tracking-wider text-white bg-teal-600 hover:bg-teal-700 px-3 py-1.5 rounded-full shadow-sm transition-all active:scale-95"
@@ -358,18 +400,32 @@ export function GigsView({ onGigAccepted }: GigsViewProps) {
                 </div>
                 
                 {user && gig.ownerId === user.uid ? (
-                  gig.status === 'completed' ? (
-                    <span className="bg-green-100 text-green-700 text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-lg flex items-center gap-1">
-                      <Check className="w-3.5 h-3.5" /> Completed
-                    </span>
-                  ) : (
+                  <div className="flex items-center gap-1.5">
+                    {gig.status === 'completed' ? (
+                      <span className="bg-green-100 text-green-700 text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-lg flex items-center gap-1">
+                        <Check className="w-3.5 h-3.5" /> Completed
+                      </span>
+                    ) : (
+                      <button
+                        onClick={() => completeGig(gig.id)}
+                        className="bg-teal-600 hover:bg-teal-700 active:scale-95 text-white text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-lg transition-all shadow-sm flex items-center gap-1"
+                      >
+                        <Check className="w-3.5 h-3.5" /> Mark Done
+                      </button>
+                    )}
                     <button
-                      onClick={() => completeGig(gig.id)}
-                      className="bg-teal-600 hover:bg-teal-700 active:scale-95 text-white text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-lg transition-all shadow-sm flex items-center gap-1"
+                      onClick={() => openEditModal(gig)}
+                      className="bg-gray-100 hover:bg-gray-200 active:scale-95 text-gray-700 text-[10px] font-black uppercase tracking-widest px-2 py-1.5 rounded-lg transition-all shadow-sm flex items-center"
                     >
-                      <Check className="w-3.5 h-3.5" /> Mark Done
+                      <Edit2 className="w-3.5 h-3.5" />
                     </button>
-                  )
+                    <button
+                      onClick={() => handleDeleteGig(gig.id)}
+                      className="bg-red-50 hover:bg-red-100 active:scale-95 text-red-600 text-[10px] font-black uppercase tracking-widest px-2 py-1.5 rounded-lg transition-all shadow-sm flex items-center"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
                 ) : (
                   <button
                     onClick={() => handleApply(gig)}
@@ -436,17 +492,24 @@ export function GigsView({ onGigAccepted }: GigsViewProps) {
             >
               <div className="px-6 py-4 bg-gray-50 border-b border-gray-100 flex items-center justify-between">
                 <h3 className="font-black text-gray-900 uppercase tracking-wider text-sm flex items-center gap-2">
-                  <Plus className="w-4 h-4 text-teal-600" /> Post a New GiG
+                  {editingGigId ? (
+                    <><Edit2 className="w-4 h-4 text-teal-600" /> Edit GiG</>
+                  ) : (
+                    <><Plus className="w-4 h-4 text-teal-600" /> Post a New GiG</>
+                  )}
                 </h3>
                 <button 
-                  onClick={() => setShowCreateModal(false)}
+                  onClick={() => {
+                    setShowCreateModal(false);
+                    setEditingGigId(null);
+                  }}
                   className="p-1 rounded-full text-gray-400 hover:bg-gray-200"
                 >
                   <X className="w-5 h-5" />
                 </button>
               </div>
 
-              <form onSubmit={handleCreateGig} className="p-6 space-y-4 overflow-y-auto">
+              <form onSubmit={handleSaveGig} className="p-6 space-y-4 overflow-y-auto">
                 <div className="space-y-1.5">
                   <label className="text-xs font-bold text-gray-600 uppercase">GiG Title</label>
                   <input 
@@ -533,7 +596,10 @@ export function GigsView({ onGigAccepted }: GigsViewProps) {
                 <div className="pt-4 flex gap-3">
                   <button
                     type="button"
-                    onClick={() => setShowCreateModal(false)}
+                    onClick={() => {
+                      setShowCreateModal(false);
+                      setEditingGigId(null);
+                    }}
                     className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 py-3 rounded-xl text-xs font-black uppercase tracking-wider transition-all"
                   >
                     Cancel
@@ -544,7 +610,7 @@ export function GigsView({ onGigAccepted }: GigsViewProps) {
                     className="flex-1 bg-teal-600 hover:bg-teal-700 text-white py-3 rounded-xl text-xs font-black uppercase tracking-wider shadow-lg shadow-teal-600/20 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
                   >
                     {creating && <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />}
-                    Publish GiG
+                    {editingGigId ? 'Save Changes' : 'Publish GiG'}
                   </button>
                 </div>
               </form>

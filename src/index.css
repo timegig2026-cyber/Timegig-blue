@@ -1,1 +1,42 @@
 @import "tailwindcss";
+
+html.dark {
+  filter: invert(0.92) hue-rotate(180deg);
+  background: #111;
+}
+
+html.dark img,
+html.dark video,
+html.dark .no-invert {
+  filter: invert(1) hue-rotate(180deg);
+}
+
+/* Google Translate Aggressive Hiding */
+body { 
+  top: 0 !important; 
+  position: static !important; 
+}
+html { 
+  top: 0 !important; 
+}
+
+/* Hide all possible translation tooltips, banners, and iframes */
+iframe.skiptranslate,
+.goog-te-banner-frame, 
+.goog-te-gadget-icon,
+#goog-gt-tt, 
+.goog-te-balloon-frame,
+.VIpgJd-ZVi9od-aZ2wEe-wxdoyh,
+.VIpgJd-ZVi9od-ORHb-OEVmcd,
+.VIpgJd-yAWNEb-hvhzNd { 
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+.goog-text-highlight { 
+  background-color: transparent !important; 
+  box-shadow: none !important; 
+}
+
