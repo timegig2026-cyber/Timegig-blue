@@ -154,12 +154,15 @@ export function GigsView({ onGigAccepted }: GigsViewProps) {
         });
         alert("GiG updated successfully!");
       } else {
-        await createGig({
+        const createData: Omit<Gig, 'id'> = {
           ...gigData,
           ownerId: user.uid,
           status: 'active',
-          imageUrl: imageUrl || undefined
-        });
+        };
+        if (imageUrl) {
+          createData.imageUrl = imageUrl;
+        }
+        await createGig(createData);
         alert("GiG created successfully!");
       }
 
