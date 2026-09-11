@@ -34,6 +34,12 @@ export function ProfileView({ user, onLogout, onRedirectToGigs }: Props) {
     surname: user?.displayName?.split(' ').slice(1).join(' ') || '',
     middleName: '',
     dob: '',
+    phone: '',
+    idNumber: '',
+    gender: '',
+    city: '',
+    bio: '',
+    skills: '',
     profilePictureName: '',
     idDocumentName: '',
     cvName: '',
@@ -147,6 +153,12 @@ export function ProfileView({ user, onLogout, onRedirectToGigs }: Props) {
         surname: profile.surname || '',
         middleName: profile.middleName || '',
         dob: profile.dob || '',
+        phone: profile.phone || '',
+        idNumber: profile.idNumber || '',
+        gender: profile.gender || '',
+        city: profile.city || '',
+        bio: profile.bio || '',
+        skills: profile.skills || '',
         province: profile.province || 'Gauteng',
         isOnline: Boolean(profile.isOnline),
         isAdmin: Boolean(profile.isAdmin),
@@ -168,6 +180,7 @@ export function ProfileView({ user, onLogout, onRedirectToGigs }: Props) {
       await setDoc(doc(db, 'profiles', user.uid), profileData, { merge: true });
       
       setSubmitStep('success');
+      alert("Your profile has been successfully sent for admin review.");
       
       await new Promise(r => setTimeout(r, 1500));
 
@@ -202,7 +215,7 @@ export function ProfileView({ user, onLogout, onRedirectToGigs }: Props) {
       {/* Header */}
       <div className="bg-white px-6 pt-6 pb-4 border-b border-gray-100 shadow-sm">
         <div className="max-w-2xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 min-w-0">
             <div className="relative group">
               {profile.profilePictureUrl || user.photoURL ? (
                 <SafeImage 
@@ -235,35 +248,39 @@ export function ProfileView({ user, onLogout, onRedirectToGigs }: Props) {
       {/* Notification */}
       <AnimatePresence>
         {notification && (
-          <motion.div 
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            className="mx-6 mt-4 p-4 bg-teal-50 border border-teal-100 rounded-xl flex items-start gap-3 shadow-sm"
-          >
-            <CheckCircle className="w-5 h-5 text-teal-600 mt-0.5" />
-            <p className="text-sm text-teal-800 font-medium leading-relaxed">
-              {notification}
-            </p>
-          </motion.div>
+          <div className="w-full px-6 flex justify-center">
+            <motion.div 
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              className="mt-4 p-4 bg-teal-50 border border-teal-100 rounded-xl flex items-start gap-3 shadow-sm max-w-2xl w-full"
+            >
+              <CheckCircle className="w-5 h-5 text-teal-600 mt-0.5 flex-shrink-0" />
+              <p className="text-sm text-teal-800 font-medium leading-relaxed">
+                {notification}
+              </p>
+            </motion.div>
+          </div>
         )}
         {!canUpdate && (
-          <motion.div 
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mx-6 mt-4 p-4 bg-amber-50 border border-amber-100 rounded-xl flex items-start gap-3 shadow-sm max-w-2xl mx-auto w-full"
-          >
-            <AlertCircle className="w-5 h-5 text-amber-600 mt-0.5" />
-            <p className="text-sm text-amber-800 font-medium leading-relaxed">
-              <strong>Profile update locked.</strong> You can update your information again in {daysUntilUpdate} day{daysUntilUpdate === 1 ? '' : 's'}.
-            </p>
-          </motion.div>
+          <div className="w-full px-6 flex justify-center">
+            <motion.div 
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mt-4 p-4 bg-amber-50 border border-amber-100 rounded-xl flex items-start gap-3 shadow-sm max-w-2xl w-full"
+            >
+              <AlertCircle className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" />
+              <p className="text-sm text-amber-800 font-medium leading-relaxed">
+                <strong>Profile update locked.</strong> You can update your information again in {daysUntilUpdate} day{daysUntilUpdate === 1 ? '' : 's'}.
+              </p>
+            </motion.div>
+          </div>
         )}
       </AnimatePresence>
 
       {/* Form */}
-      <form onSubmit={handleSubmit} className="max-w-2xl mx-auto w-full px-6 py-8 flex flex-col gap-8">
-        <fieldset disabled={!canUpdate} className="flex flex-col gap-8 disabled:opacity-75">
+      <form onSubmit={handleSubmit} className="max-w-2xl mx-auto w-full px-4 sm:px-6 py-8 flex flex-col gap-8 overflow-hidden">
+        <fieldset disabled={!canUpdate} className="min-w-0 flex flex-col gap-8 disabled:opacity-75">
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
           <div className="px-6 py-4 bg-gray-50/50 border-b border-gray-100">
             <h2 className="font-bold text-gray-800 flex items-center gap-2">
@@ -284,7 +301,6 @@ export function ProfileView({ user, onLogout, onRedirectToGigs }: Props) {
                 placeholder="John"
               />
             </div>
-
             <div className="space-y-1.5">
               <label className="text-xs font-bold text-gray-400 uppercase tracking-wider ml-1">Middle Name (Optional)</label>
               <input 
@@ -295,7 +311,6 @@ export function ProfileView({ user, onLogout, onRedirectToGigs }: Props) {
                 placeholder="Quincy"
               />
             </div>
-
             <div className="space-y-1.5">
               <label className="text-xs font-bold text-gray-400 uppercase tracking-wider ml-1">Surname</label>
               <input 
@@ -307,7 +322,28 @@ export function ProfileView({ user, onLogout, onRedirectToGigs }: Props) {
                 placeholder="Doe"
               />
             </div>
-
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-gray-400 uppercase tracking-wider ml-1">Phone Number</label>
+              <input 
+                required
+                type="tel"
+                value={profile.phone || ''}
+                onChange={e => setProfile({...profile, phone: e.target.value})}
+                className="w-full bg-gray-50 border-none rounded-xl px-4 py-3 text-gray-700 focus:ring-2 focus:ring-teal-500 outline-none transition-all"
+                placeholder="082 123 4567"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-gray-400 uppercase tracking-wider ml-1">SA ID Number</label>
+              <input 
+                required
+                type="text"
+                value={profile.idNumber || ''}
+                onChange={e => setProfile({...profile, idNumber: e.target.value})}
+                className="w-full bg-gray-50 border-none rounded-xl px-4 py-3 text-gray-700 focus:ring-2 focus:ring-teal-500 outline-none transition-all"
+                placeholder="YYMMDDXXXXXXX"
+              />
+            </div>
             <div className="space-y-1.5">
               <label className="text-xs font-bold text-gray-400 uppercase tracking-wider ml-1">Date of Birth</label>
               <input 
@@ -318,7 +354,31 @@ export function ProfileView({ user, onLogout, onRedirectToGigs }: Props) {
                 className="w-full bg-gray-50 border-none rounded-xl px-4 py-3 text-gray-700 focus:ring-2 focus:ring-teal-500 outline-none transition-all"
               />
             </div>
-
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-gray-400 uppercase tracking-wider ml-1">Gender</label>
+              <select 
+                required
+                value={profile.gender || ''}
+                onChange={e => setProfile({...profile, gender: e.target.value})}
+                className="w-full bg-gray-50 border-none rounded-xl px-4 py-3 text-gray-700 focus:ring-2 focus:ring-teal-500 outline-none transition-all appearance-none cursor-pointer"
+              >
+                <option value="" disabled>Select Gender</option>
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-gray-400 uppercase tracking-wider ml-1">City / Town</label>
+              <input 
+                required
+                type="text"
+                value={profile.city || ''}
+                onChange={e => setProfile({...profile, city: e.target.value})}
+                className="w-full bg-gray-50 border-none rounded-xl px-4 py-3 text-gray-700 focus:ring-2 focus:ring-teal-500 outline-none transition-all"
+                placeholder="Johannesburg"
+              />
+            </div>
             <div className="space-y-1.5">
               <label className="text-xs font-bold text-gray-400 uppercase tracking-wider ml-1">Province</label>
               <select 
@@ -338,25 +398,51 @@ export function ProfileView({ user, onLogout, onRedirectToGigs }: Props) {
                 <option value="Northern Cape">Northern Cape</option>
               </select>
             </div>
-
             <div className="space-y-1.5">
               <label className="text-xs font-bold text-gray-400 uppercase tracking-wider ml-1">Availability</label>
               <div 
                 onClick={() => setProfile({...profile, isOnline: !profile.isOnline})}
                 className="flex items-center justify-between w-full bg-gray-50 border-none rounded-xl px-4 py-3 cursor-pointer transition-all hover:bg-gray-100"
               >
-                <span className="text-sm font-bold text-gray-600">
+                <span className="text-gray-700 font-medium">
                   {profile.isOnline ? 'Online & Ready' : 'Offline / Busy'}
                 </span>
-                <div className={`w-10 h-6 rounded-full p-1 transition-colors ${profile.isOnline ? 'bg-teal-500' : 'bg-gray-300'}`}>
+                <div className={`w-10 h-6 rounded-full p-1 flex-shrink-0 transition-colors ${profile.isOnline ? 'bg-teal-500' : 'bg-gray-300'}`}>
                   <div className={`w-4 h-4 bg-white rounded-full shadow-sm transition-transform ${profile.isOnline ? 'translate-x-4' : 'translate-x-0'}`} />
                 </div>
               </div>
             </div>
           </div>
+          
+          <div className="px-6 pb-6">
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-gray-400 uppercase tracking-wider ml-1">Bio / About Me</label>
+              <textarea 
+                required
+                value={profile.bio || ''}
+                onChange={e => setProfile({...profile, bio: e.target.value})}
+                className="w-full bg-gray-50 border-none rounded-xl px-4 py-3 text-gray-700 focus:ring-2 focus:ring-teal-500 outline-none transition-all min-h-[120px] resize-none"
+                placeholder="Tell us about your experience, skills, and what kind of gigs you are looking for..."
+              />
+            </div>
+          </div>
+          <div className="px-6 pb-6">
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-gray-400 uppercase tracking-wider ml-1">Skills</label>
+              <input 
+                type="text"
+                value={profile.skills || ''}
+                onChange={e => setProfile({...profile, skills: e.target.value})}
+                className="w-full bg-gray-50 border-none rounded-xl px-4 py-3 text-gray-700 focus:ring-2 focus:ring-teal-500 outline-none transition-all"
+                placeholder="e.g. Plumbing, Electrical, Web Design (comma separated)"
+              />
+            </div>
+
+          </div>
         </div>
 
         {/* Subscription Status Card */}
+
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
           <div className="px-6 py-4 bg-gray-50/50 border-b border-gray-100 flex items-center justify-between">
             <h2 className="font-bold text-gray-800 flex items-center gap-2">
@@ -455,7 +541,7 @@ export function ProfileView({ user, onLogout, onRedirectToGigs }: Props) {
                   htmlFor="profile-pic-upload"
                   className="flex items-center gap-3 w-full bg-gray-50 border-2 border-dashed border-gray-200 rounded-xl px-4 py-6 cursor-pointer hover:bg-gray-100 hover:border-teal-300 transition-all group"
                 >
-                  <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform overflow-hidden border border-gray-100">
+                  <div className="w-12 h-12 flex-shrink-0 bg-white rounded-full flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform overflow-hidden border border-gray-100">
                     {profilePicFile ? (
                       <img src={URL.createObjectURL(profilePicFile)} className="w-full h-full object-cover" alt="Preview" />
                     ) : (
@@ -494,7 +580,7 @@ export function ProfileView({ user, onLogout, onRedirectToGigs }: Props) {
                   htmlFor="id-upload"
                   className="flex items-center gap-3 w-full bg-gray-50 border-2 border-dashed border-gray-200 rounded-xl px-4 py-6 cursor-pointer hover:bg-gray-100 hover:border-teal-300 transition-all group"
                 >
-                  <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform">
+                  <div className="w-10 h-10 flex-shrink-0 bg-white rounded-lg flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform">
                     <FileText className="w-5 h-5 text-gray-400" />
                   </div>
                   <div className="flex-1">
@@ -522,7 +608,7 @@ export function ProfileView({ user, onLogout, onRedirectToGigs }: Props) {
                   htmlFor="cv-upload"
                   className="flex items-center gap-3 w-full bg-gray-50 border-2 border-dashed border-gray-200 rounded-xl px-4 py-4 cursor-pointer hover:bg-gray-100 transition-all"
                 >
-                  <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center shadow-sm">
+                  <div className="w-8 h-8 flex-shrink-0 bg-white rounded-lg flex items-center justify-center shadow-sm">
                     <Upload className="w-4 h-4 text-gray-400" />
                   </div>
                   <p className="text-sm font-medium text-gray-500">

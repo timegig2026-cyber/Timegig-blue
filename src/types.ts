@@ -16,6 +16,12 @@ export interface UserProfile {
   middleName?: string;
   surname: string;
   dob: string;
+  phone?: string;
+  idNumber?: string;
+  gender?: string;
+  city?: string;
+  bio?: string;
+  skills?: string;
   profilePictureName?: string;
   profilePictureUrl?: string;
   idDocumentName?: string;
