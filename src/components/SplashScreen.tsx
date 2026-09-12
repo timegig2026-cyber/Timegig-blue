@@ -11,15 +11,15 @@ export function SplashScreen() {
         className="text-center space-y-4"
       >
         <h1 className="text-6xl md:text-8xl font-black text-gray-900 tracking-tighter">
-          Time<span className="text-teal-600">GiG</span>
+          Time<span className="text-green-800">GiG</span>
         </h1>
         <motion.div 
           initial={{ width: 0 }}
           animate={{ width: "100%" }}
           transition={{ duration: 2, ease: "linear", delay: 0.5 }}
-          className="h-1.5 bg-teal-600/10 rounded-full overflow-hidden"
+          className="h-1.5 bg-green-800/10 rounded-full overflow-hidden"
         >
-          <div className="h-full bg-teal-600 w-full" />
+          <div className="h-full bg-green-800 w-full" />
         </motion.div>
         <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.3em] pt-4">
           Professional Seekers & Gigs

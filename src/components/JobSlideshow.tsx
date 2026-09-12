@@ -8,8 +8,8 @@ const JOBS = [
     title: "Home Cleaning",
     description: "Professional cleaning services for every home.",
     icon: Sparkles,
-    color: "text-teal-600",
-    bg: "bg-teal-50",
+    color: "text-green-800",
+    bg: "bg-green-50",
     image: "https://picsum.photos/seed/cleaning/1000/600"
   },
   {
@@ -59,17 +59,17 @@ export function JobSlideshow() {
   const Job = JOBS[current];
 
   return (
-    <div className="fixed inset-0 z-[9999] bg-white flex flex-col items-center justify-center p-6">
-      <div className="w-full max-w-lg space-y-8">
+    <div className="fixed inset-0 z-[9999] bg-white flex flex-col items-center justify-center p-4">
+      <div className="w-full max-w-sm space-y-4">
         <AnimatePresence mode="wait">
           <motion.div
             key={current}
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            className="space-y-6"
+            exit={{ opacity: 0, y: -15 }}
+            className="space-y-3"
           >
-            <div className="relative aspect-video rounded-[3rem] overflow-hidden shadow-2xl">
+            <div className="relative aspect-video rounded-2xl overflow-hidden shadow-lg">
               <SafeImage 
                 src={Job.image} 
                 alt={Job.title}
@@ -77,25 +77,25 @@ export function JobSlideshow() {
                 fallbackType="gig"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-              <div className="absolute bottom-6 left-8">
-                <div className={`${Job.bg} ${Job.color} w-12 h-12 rounded-2xl flex items-center justify-center mb-3`}>
-                  <Job.icon className="w-6 h-6" />
+              <div className="absolute bottom-3 left-4">
+                <div className={`${Job.bg} ${Job.color} w-8 h-8 rounded-lg flex items-center justify-center mb-1.5 shadow-xs`}>
+                  <Job.icon className="w-4 h-4" />
                 </div>
-                <h2 className="text-3xl font-black text-white tracking-tight">{Job.title}</h2>
+                <h2 className="text-lg font-black text-white tracking-tight">{Job.title}</h2>
               </div>
             </div>
 
-            <div className="text-center space-y-2">
-              <p className="text-lg font-medium text-gray-600">{Job.description}</p>
+            <div className="text-center">
+              <p className="text-xs font-medium text-gray-600">{Job.description}</p>
             </div>
           </motion.div>
         </AnimatePresence>
 
-        <div className="flex justify-center gap-2">
+        <div className="flex justify-center gap-1.5">
           {JOBS.map((_, i) => (
             <div 
               key={i}
-              className={`h-1 rounded-full transition-all duration-300 ${i === current ? 'w-8 bg-teal-600' : 'w-2 bg-gray-100'}`}
+              className={`h-1 rounded-full transition-all duration-300 ${i === current ? 'w-5 bg-green-800' : 'w-1.5 bg-gray-100'}`}
             />
           ))}
         </div>
@@ -105,10 +105,10 @@ export function JobSlideshow() {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.5 }}
-        className="absolute bottom-12 text-center"
+        className="absolute bottom-6 text-center"
       >
-        <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.3em]">
-          Time<span className="text-teal-600">GiG</span> Gateway
+        <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">
+          Time<span className="text-green-800">GiG</span> Gateway
         </p>
       </motion.div>
     </div>

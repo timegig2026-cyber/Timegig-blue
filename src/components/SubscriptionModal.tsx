@@ -90,66 +90,68 @@ export function SubscriptionModal({ user, profile, onSuccess, onClose }: Props) 
   };
 
   return (
-    <div className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-md flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-xs flex items-center justify-center p-3">
       <motion.div 
         initial={{ scale: 0.9, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
-        className="bg-white rounded-[1.5rem] w-full max-w-[340px] overflow-hidden shadow-2xl"
+        className="bg-white rounded-2xl w-full max-w-[300px] overflow-hidden shadow-xl"
       >
         <AnimatePresence mode="wait">
           {step === 'intro' && (
             <motion.div 
               key="intro"
-              initial={{ x: 20, opacity: 0 }}
+              initial={{ x: 15, opacity: 0 }}
               animate={{ x: 0, opacity: 1 }}
-              exit={{ x: -20, opacity: 0 }}
-              className="p-5 space-y-4 relative"
+              exit={{ x: -15, opacity: 0 }}
+              className="p-3.5 space-y-2.5 relative"
             >
               <button 
                 onClick={onClose}
-                className="absolute top-4 left-4 p-2 text-gray-400 hover:text-gray-600 transition-colors"
+                title="Close"
+                aria-label="Close"
+                className="absolute top-2.5 left-2.5 p-1 text-gray-400 hover:text-gray-600 rounded-md transition-colors"
               >
-                <ArrowLeft className="w-4 h-4" />
+                <ArrowLeft className="w-3.5 h-3.5" />
               </button>
 
-              <div className="flex justify-center">
-                <div className="w-12 h-12 bg-teal-100 rounded-xl flex items-center justify-center text-teal-600">
-                  <Zap className="w-6 h-6 fill-teal-600" />
+              <div className="flex justify-center pt-1">
+                <div className="w-9 h-9 bg-green-100 rounded-lg flex items-center justify-center text-green-800">
+                  <Zap className="w-4 h-4 fill-green-800" />
                 </div>
               </div>
 
               <div className="text-center space-y-0.5">
-                <h2 className="text-lg font-black text-gray-900">15-Day Free Trial</h2>
-                <p className="text-[11px] text-gray-500 font-medium">Full access to premium GiGs today.</p>
+                <h2 className="text-sm font-bold text-gray-900">15-Day Free Trial</h2>
+                <p className="text-[10px] text-gray-500 font-medium">Full access to premium GiGs today.</p>
               </div>
 
-              <div className="bg-gray-50 rounded-lg p-3 border border-gray-100 space-y-2">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-5 h-5 bg-white rounded flex items-center justify-center shadow-sm">
-                    <CheckCircle className="w-3 h-3 text-teal-600" />
+              <div className="bg-gray-50 rounded-lg p-2.5 border border-gray-100 space-y-1.5">
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 bg-white rounded flex items-center justify-center shadow-xs">
+                    <CheckCircle className="w-2.5 h-2.5 text-green-800" />
                   </div>
-                  <span className="text-[11px] font-bold text-gray-700">Unlimited GiG Applications</span>
+                  <span className="text-[10px] font-bold text-gray-700">Unlimited GiG Applications</span>
                 </div>
-                <div className="flex items-center gap-2.5">
-                  <div className="w-5 h-5 bg-white rounded flex items-center justify-center shadow-sm">
-                    <CheckCircle className="w-3 h-3 text-teal-600" />
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 bg-white rounded flex items-center justify-center shadow-xs">
+                    <CheckCircle className="w-2.5 h-2.5 text-green-800" />
                   </div>
-                  <span className="text-[11px] font-bold text-gray-700">Priority Seeker Hiring</span>
+                  <span className="text-[10px] font-bold text-gray-700">Priority Seeker Hiring</span>
                 </div>
               </div>
 
-              <div className="space-y-2.5 pt-1">
+              <div className="space-y-1.5 pt-0.5">
                 <button 
                   onClick={startTrial}
                   disabled={submitting}
-                  className="w-full bg-teal-600 text-white py-3 rounded-xl font-black shadow-lg shadow-teal-600/20 hover:bg-teal-700 active:scale-95 transition-all flex items-center justify-center gap-2"
+                  className="w-full bg-green-800 text-white py-2 rounded-lg font-bold text-xs shadow-xs hover:bg-green-900 active:scale-95 transition-all flex items-center justify-center gap-1.5"
                 >
-                  {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : "Start Free Trial"}
-                  <ArrowRight className="w-4 h-4" />
+                  {submitting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Start Free Trial"}
+                  <ArrowRight className="w-3.5 h-3.5" />
                 </button>
                 <button 
                   onClick={() => setStep('payment')}
-                  className="w-full text-gray-400 font-bold hover:text-gray-600 text-[9px] uppercase tracking-widest"
+                  className="w-full text-gray-400 font-bold hover:text-gray-600 text-[8px] uppercase tracking-wider py-0.5"
                 >
                   Pay R49.99 Monthly
                 </button>
@@ -160,61 +162,63 @@ export function SubscriptionModal({ user, profile, onSuccess, onClose }: Props) 
           {step === 'payment' && (
             <motion.div 
               key="payment"
-              initial={{ x: 20, opacity: 0 }}
+              initial={{ x: 15, opacity: 0 }}
               animate={{ x: 0, opacity: 1 }}
-              exit={{ x: -20, opacity: 0 }}
-              className="p-5 space-y-4 relative"
+              exit={{ x: -15, opacity: 0 }}
+              className="p-3.5 space-y-2.5 relative"
             >
               <button 
                 onClick={() => setStep('intro')}
-                className="absolute top-4 left-4 p-2 text-gray-400 hover:text-gray-600 transition-colors"
+                title="Back"
+                aria-label="Back"
+                className="absolute top-2.5 left-2.5 p-1 text-gray-400 hover:text-gray-600 rounded-md transition-colors"
               >
-                <ArrowLeft className="w-4 h-4" />
+                <ArrowLeft className="w-3.5 h-3.5" />
               </button>
 
-              <div className="flex justify-center">
-                <div className="w-12 h-12 bg-amber-100 rounded-xl flex items-center justify-center text-amber-600">
-                  <Wallet className="w-6 h-6" />
+              <div className="flex justify-center pt-1">
+                <div className="w-9 h-9 bg-amber-100 rounded-lg flex items-center justify-center text-amber-600">
+                  <Wallet className="w-4 h-4" />
                 </div>
               </div>
 
               <div className="text-center space-y-0.5">
-                <h2 className="text-lg font-black text-gray-900">Bank Transfer</h2>
-                <p className="text-[11px] text-gray-500 font-medium leading-tight">Make a manual payment to activate.</p>
+                <h2 className="text-sm font-bold text-gray-900">Bank Transfer</h2>
+                <p className="text-[10px] text-gray-500 font-medium leading-tight">Make a manual payment to activate.</p>
               </div>
 
-              <div className="bg-gray-900 rounded-2xl p-4 text-white space-y-3 shadow-2xl relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-20 h-20 bg-teal-500/10 blur-3xl -mr-10 -mt-10" />
+              <div className="bg-gray-900 rounded-xl p-2.5 text-white space-y-2 shadow-sm relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-16 h-16 bg-green-700/10 blur-2xl -mr-8 -mt-8" />
                 
                 <div className="flex justify-between items-start">
                   <div>
-                    <p className="text-[8px] font-black text-gray-500 uppercase tracking-widest mb-0.5">Account Holder</p>
-                    <p className="font-bold text-sm">Matthews</p>
+                    <p className="text-[7px] font-bold text-gray-400 uppercase tracking-wider mb-0.5">Account Holder</p>
+                    <p className="font-bold text-xs">Matthews</p>
                   </div>
-                  <div className="bg-teal-500 px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-wider">Capitec</div>
+                  <div className="bg-green-700 px-1 py-0.5 rounded text-[7px] font-bold uppercase tracking-wider">Capitec</div>
                 </div>
 
-                <div className="space-y-2">
+                <div className="space-y-1">
                   <div>
-                    <p className="text-[8px] font-black text-gray-500 uppercase tracking-widest mb-0.5">Account Number</p>
-                    <p className="text-lg font-mono tracking-wider font-black">1334067366</p>
+                    <p className="text-[7px] font-bold text-gray-400 uppercase tracking-wider mb-0.5">Account Number</p>
+                    <p className="text-sm font-mono tracking-wider font-bold">1334067366</p>
                   </div>
                   <div className="flex justify-between">
                     <div>
-                      <p className="text-[8px] font-black text-gray-500 uppercase tracking-widest mb-0.5">Reference</p>
-                      <p className="font-black text-xs text-teal-400">49Sub</p>
+                      <p className="text-[7px] font-bold text-gray-400 uppercase tracking-wider mb-0.5">Reference</p>
+                      <p className="font-bold text-[11px] text-green-600">49Sub</p>
                     </div>
                     <div>
-                      <p className="text-[8px] font-black text-gray-500 uppercase tracking-widest mb-0.5">Amount</p>
-                      <p className="font-black text-xs">R49,99</p>
+                      <p className="text-[7px] font-bold text-gray-400 uppercase tracking-wider mb-0.5">Amount</p>
+                      <p className="font-bold text-[11px]">R49,99</p>
                     </div>
                   </div>
                 </div>
               </div>
 
-              <div className="space-y-3">
-                <div className="space-y-1.5">
-                   <label className="text-[9px] font-black text-gray-400 uppercase tracking-widest ml-1">Proof of Payment</label>
+              <div className="space-y-2">
+                <div className="space-y-1">
+                   <label className="text-[8px] font-bold text-gray-400 uppercase tracking-wider ml-0.5">Proof of Payment</label>
                    <input 
                      type="file" 
                      className="hidden" 
@@ -223,10 +227,10 @@ export function SubscriptionModal({ user, profile, onSuccess, onClose }: Props) 
                    />
                    <label 
                      htmlFor="pop-upload"
-                     className="flex items-center gap-2.5 w-full bg-gray-50 border-2 border-dashed border-gray-200 rounded-lg px-3 py-2.5 cursor-pointer hover:bg-gray-100 transition-all"
+                     className="flex items-center gap-2 w-full bg-gray-50 border border-dashed border-gray-200 rounded-lg px-2.5 py-1.5 cursor-pointer hover:bg-gray-100 transition-all"
                    >
-                     <div className="w-7 h-7 bg-white rounded flex items-center justify-center shadow-sm">
-                       <Upload className="w-3.5 h-3.5 text-gray-400" />
+                     <div className="w-5 h-5 bg-white rounded flex items-center justify-center shadow-xs">
+                       <Upload className="w-3 h-3 text-gray-400" />
                      </div>
                      <span className="text-[10px] font-bold text-gray-600 truncate">
                         {proofFile ? proofFile.name : "Select POP from device"}
@@ -237,10 +241,10 @@ export function SubscriptionModal({ user, profile, onSuccess, onClose }: Props) 
                 <button 
                   onClick={handleProofSubmit}
                   disabled={!proofFile || submitting}
-                  className="w-full bg-teal-600 text-white py-3 rounded-xl font-black shadow-lg shadow-teal-600/20 hover:bg-teal-700 active:scale-95 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                  className="w-full bg-green-800 text-white py-2 rounded-lg font-bold text-xs shadow-xs hover:bg-green-900 active:scale-95 transition-all flex items-center justify-center gap-1.5 disabled:opacity-50"
                 >
-                  {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : "Submit Payment"}
-                  <CheckCircle className="w-4 h-4" />
+                  {submitting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Submit Payment"}
+                  <CheckCircle className="w-3.5 h-3.5" />
                 </button>
               </div>
             </motion.div>
@@ -251,13 +255,13 @@ export function SubscriptionModal({ user, profile, onSuccess, onClose }: Props) 
               key="proof"
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
-              className="p-10 text-center space-y-4"
+              className="p-6 text-center space-y-2"
             >
-              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-2">
-                <CheckCircle className="w-8 h-8 text-green-600" />
+              <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-1">
+                <CheckCircle className="w-5 h-5 text-green-600" />
               </div>
-              <h2 className="text-xl font-black text-gray-900">Congratulations!</h2>
-              <p className="text-sm text-gray-500 font-medium">
+              <h2 className="text-sm font-bold text-gray-900">Congratulations!</h2>
+              <p className="text-[11px] text-gray-500 font-medium">
                 Your payment proof is uploaded. Review takes 15-25 minutes. 
                 Redirecting...
               </p>

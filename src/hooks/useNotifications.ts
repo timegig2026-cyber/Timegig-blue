@@ -1,10 +1,12 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { db, collection, query, onSnapshot, where, orderBy, deleteDoc, doc, addDoc, serverTimestamp, getDocs, limit } from '../lib/firebase';
 import { AppNotification } from '../types';
+import { playNotificationSound } from '../lib/soundUtils';
 
 export function useNotifications(userId: string) {
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [loading, setLoading] = useState(true);
+  const isInitialLoad = useRef(true);
 
   useEffect(() => {
     if (!userId) {
@@ -12,6 +14,8 @@ export function useNotifications(userId: string) {
       setLoading(false);
       return;
     }
+
+    isInitialLoad.current = true;
 
     const q = query(
       collection(db, 'notifications'),
@@ -24,8 +28,20 @@ export function useNotifications(userId: string) {
         id: doc.id,
         ...doc.data()
       })) as AppNotification[];
+      
+      if (!isInitialLoad.current) {
+        let hasNew = false;
+        snapshot.docChanges().forEach((change) => {
+          if (change.type === 'added') hasNew = true;
+        });
+        if (hasNew) {
+          playNotificationSound();
+        }
+      }
+
       setNotifications(data);
       setLoading(false);
+      isInitialLoad.current = false;
     }, (error) => {
       console.error("Error fetching notifications:", error);
       setLoading(false);

@@ -5,11 +5,11 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Search, MapPin, ChevronDown, Check, LogIn, User, Plus, X, Image as ImageIcon, Edit2, Trash2 } from 'lucide-react';
+import { Search, MapPin, ChevronDown, Check, LogIn, User, Plus, X, Image as ImageIcon, Edit2, Trash2, Zap } from 'lucide-react';
 import { useGigs } from '../hooks/useGigs';
 import { useAuth } from '../hooks/useAuth';
 import { db, doc, getDoc } from '../lib/firebase';
-import { UserProfile } from '../types';
+import { UserProfile, Gig } from '../types';
 import { ImageViewer } from './ImageViewer';
 import { SafeImage } from './SafeImage';
 import { compressImage } from '../lib/imageUtils';
@@ -26,19 +26,7 @@ const SA_LOCATIONS: Record<string, string[]> = {
   'Northern Cape': ['Kimberley', 'Upington'],
 };
 
-export interface Gig {
-  id: string;
-  title: string;
-  province: string;
-  location: string;
-  price: string;
-  tags: string[];
-  lat: number;
-  lng: number;
-  ownerId: string;
-  status?: 'active' | 'completed';
-  imageUrl?: string;
-}
+
 
 interface GigsViewProps {
   onGigAccepted: (gig: Gig) => void;
@@ -71,7 +59,7 @@ function OwnerAvatar({ ownerId, onClick }: { ownerId: string; onClick: (profile:
     fetchProfile();
   }, [ownerId]);
 
-  if (loading) return <div className="w-8 h-8 rounded-full bg-gray-100 animate-pulse" />;
+  if (loading) return <div className="w-7 h-7 rounded-full bg-gray-100 animate-pulse" />;
 
   return (
     <button 
@@ -79,20 +67,73 @@ function OwnerAvatar({ ownerId, onClick }: { ownerId: string; onClick: (profile:
         e.stopPropagation();
         onClick(profile);
       }}
-      className="w-8 h-8 rounded-full bg-teal-50 border border-teal-100 flex items-center justify-center overflow-hidden shadow-sm active:scale-95 transition-transform"
+      className="w-7 h-7 rounded-full bg-green-50 border border-green-100 flex items-center justify-center overflow-hidden shadow-xs active:scale-95 transition-transform flex-shrink-0"
     >
       {profile?.profilePictureName ? (
-        <User className="w-4 h-4 text-teal-600" />
+        <User className="w-3.5 h-3.5 text-green-800" />
       ) : (
-        <User className="w-4 h-4 text-teal-400" />
+        <User className="w-3.5 h-3.5 text-green-600" />
       )}
     </button>
   );
 }
 
+function GigImageCarousel({ images, title, onClick }: { images: string[]; title: string; onClick: () => void }) {
+  const [currentIndex, setCurrentIndex] = useState(0);
+
+  const handleDragEnd = (e: any, info: any) => {
+    const swipeThreshold = 50;
+    if (info.offset.x < -swipeThreshold) {
+      setCurrentIndex((prev) => (prev + 1) % images.length);
+    } else if (info.offset.x > swipeThreshold) {
+      setCurrentIndex((prev) => (prev - 1 + images.length) % images.length);
+    }
+  };
+
+  if (!images || images.length === 0) {
+    return (
+      <div 
+        onClick={onClick}
+        className="absolute inset-0 w-full h-full flex items-center justify-center bg-gray-100 group-hover:scale-105 transition-transform duration-500 cursor-pointer z-0"
+      >
+        <Zap className="w-10 h-10 text-gray-300" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="absolute inset-0 w-full h-full cursor-pointer z-0 overflow-hidden" onClick={onClick}>
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={currentIndex}
+          initial={{ opacity: 0, x: 50 }}
+          animate={{ opacity: 1, x: 0 }}
+          exit={{ opacity: 0, x: -50 }}
+          transition={{ duration: 0.2 }}
+          drag={images.length > 1 ? "x" : false}
+          dragConstraints={{ left: 0, right: 0 }}
+          dragElastic={1}
+          onDragEnd={handleDragEnd}
+          className="absolute inset-0 w-full h-full"
+        >
+          <SafeImage src={images[currentIndex]} alt={title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 pointer-events-none" />
+        </motion.div>
+      </AnimatePresence>
+      
+      {images.length > 1 && (
+        <div className="absolute top-2 right-2 flex gap-1 z-10 pointer-events-none">
+          {images.map((_, idx) => (
+            <div key={idx} className={`w-1.5 h-1.5 rounded-full backdrop-blur-md shadow-sm transition-colors ${idx === currentIndex ? 'bg-white scale-125' : 'bg-black/40 border border-white/40'}`} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function GigsView({ onGigAccepted }: GigsViewProps) {
   const { user, login } = useAuth();
-  const { gigs, loading: gigsLoading, applyForGig, completeGig, createGig, updateGig, deleteGig } = useGigs();
+  const { gigs, loading: gigsLoading, applyForGig, completeGig, cancelGig, createGig, updateGig, deleteGig } = useGigs();
   
   const [showFilter, setShowFilter] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -102,13 +143,13 @@ export function GigsView({ onGigAccepted }: GigsViewProps) {
   const [newLocation, setNewLocation] = useState('Johannesburg');
   const [newPrice, setNewPrice] = useState('R350/hr');
   const [newTagsStr, setNewTagsStr] = useState('General, In-Person');
-  const [newGigImageFile, setNewGigImageFile] = useState<File | null>(null);
+  const [newGigImageFiles, setNewGigImageFiles] = useState<File[]>([]);
   const [creating, setCreating] = useState(false);
 
   const [selectedProvince, setSelectedProvince] = useState<string | null>(null);
   const [selectedLocation, setSelectedLocation] = useState<string | null>(null);
   const [applyingTo, setApplyingTo] = useState<string | null>(null);
-  const [viewerInfo, setViewerInfo] = useState<{ isOpen: boolean; url?: string; title: string }>({
+  const [viewerInfo, setViewerInfo] = useState<{ isOpen: boolean; url?: string; imageUris?: string[]; title: string }>({
     isOpen: false,
     title: ''
   });
@@ -125,16 +166,17 @@ export function GigsView({ onGigAccepted }: GigsViewProps) {
     }
     setCreating(true);
     try {
-      let imageUrl = '';
-      if (newGigImageFile) {
+      const imageUris: string[] = [];
+      for (const file of newGigImageFiles) {
         const reader = new FileReader();
         const base64Promise = new Promise<string>((resolve, reject) => {
           reader.onload = () => resolve(reader.result as string);
           reader.onerror = reject;
-          reader.readAsDataURL(newGigImageFile);
+          reader.readAsDataURL(file);
         });
         const rawB64 = await base64Promise;
-        imageUrl = await compressImage(rawB64, 800, 0.6);
+        const compressed = await compressImage(rawB64, 800, 0.6);
+        imageUris.push(compressed);
       }
 
       const gigData = {
@@ -150,7 +192,7 @@ export function GigsView({ onGigAccepted }: GigsViewProps) {
       if (editingGigId) {
         await updateGig(editingGigId, {
           ...gigData,
-          ...(imageUrl ? { imageUrl } : {})
+          ...(imageUris.length > 0 ? { imageUris, imageUrl: imageUris[0] } : {})
         });
         alert("GiG updated successfully!");
       } else {
@@ -159,8 +201,9 @@ export function GigsView({ onGigAccepted }: GigsViewProps) {
           ownerId: user.uid,
           status: 'active',
         };
-        if (imageUrl) {
-          createData.imageUrl = imageUrl;
+        if (imageUris.length > 0) {
+          createData.imageUris = imageUris;
+          createData.imageUrl = imageUris[0];
         }
         await createGig(createData);
         alert("GiG created successfully!");
@@ -169,7 +212,7 @@ export function GigsView({ onGigAccepted }: GigsViewProps) {
       setShowCreateModal(false);
       setEditingGigId(null);
       setNewTitle('');
-      setNewGigImageFile(null);
+      setNewGigImageFiles([]);
     } catch (error) {
       console.error("Failed to save gig", error);
       alert("Failed to save gig. Please check your connection.");
@@ -185,7 +228,7 @@ export function GigsView({ onGigAccepted }: GigsViewProps) {
     setNewLocation(gig.location);
     setNewPrice(gig.price);
     setNewTagsStr((gig.tags || []).join(', '));
-    setNewGigImageFile(null);
+    setNewGigImageFiles([]);
     setShowCreateModal(true);
   };
 
@@ -206,7 +249,7 @@ export function GigsView({ onGigAccepted }: GigsViewProps) {
     
     setApplyingTo(gig.id);
     try {
-      await applyForGig(gig.id, user.uid);
+      await applyForGig(gig.id, user.uid, gig.ownerId, gig.title);
       // Simulate owner acceptance for demo purposes after 3 seconds
       setTimeout(() => {
         setApplyingTo(null);
@@ -233,108 +276,118 @@ export function GigsView({ onGigAccepted }: GigsViewProps) {
   if (gigsLoading) {
     return (
       <div className="flex items-center justify-center h-full">
-        <div className="w-8 h-8 border-4 border-teal-200 border-t-teal-600 rounded-full animate-spin" />
+        <div className="w-8 h-8 border-4 border-green-200 border-t-green-800 rounded-full animate-spin" />
       </div>
     );
   }
 
   return (
     <div className="flex flex-col h-full w-full relative">
-      <div className="w-full px-4 pt-4 pb-2 z-20 bg-white/50 backdrop-blur-sm border-b border-gray-100 relative">
-        <div className="w-full max-w-4xl mx-auto flex flex-col gap-2 relative">
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex-1 bg-white rounded-full shadow-sm border border-gray-200 p-1 flex items-center transition-all">
-              <div className="flex-1 flex items-center px-3 gap-2 w-full">
-                <Search className="w-4 h-4 text-gray-400 flex-shrink-0" />
+      <div className="w-full px-3 pt-3 pb-2 z-20 bg-white/60 backdrop-blur-xs border-b border-gray-100 relative">
+        <div className="w-full max-w-4xl mx-auto flex flex-col gap-1.5 relative">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex-1 bg-white rounded-full shadow-xs border border-gray-200 p-0.5 flex items-center transition-all">
+              <div className="flex-1 flex items-center px-2.5 gap-1.5 w-full">
+                <Search className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
                 <input 
                   type="text" 
                   placeholder="Search GiGs in South Africa..." 
-                  className="w-full bg-transparent outline-none text-gray-700 text-xs font-medium placeholder-gray-400" 
+                  className="w-full bg-transparent outline-none text-gray-700 text-xs font-medium placeholder-gray-400 py-1" 
                 />
               </div>
-              <div className="pr-1 pl-1">
-                <button className="bg-teal-500 hover:bg-teal-600 text-white p-1.5 rounded-full transition-colors shadow-sm">
-                   <Search className="w-3.5 h-3.5" />
+              <div className="pr-1">
+                <button className="bg-green-700 hover:bg-green-800 text-white p-1 rounded-full transition-colors shadow-xs">
+                   <Search className="w-3 h-3" />
                 </button>
               </div>
             </div>
             {!user && (
               <button 
                 onClick={login}
-                className="bg-white text-teal-600 border border-teal-100 px-3 py-2 rounded-full text-xs font-bold shadow-sm hover:bg-teal-50 transition-colors flex items-center gap-2 whitespace-nowrap"
+                title="Login"
+                aria-label="Login"
+                className="bg-white text-green-800 border border-green-100 w-7 h-7 rounded-full shadow-xs hover:bg-green-50 transition-colors flex items-center justify-center cursor-pointer flex-shrink-0"
               >
                 <LogIn className="w-3.5 h-3.5" />
-                Login
               </button>
             )}
           </div>
           
-          <div className="flex items-center justify-between px-1">
-             <div className="flex items-center gap-2">
-               <h3 className="text-xs font-bold text-gray-700 uppercase tracking-wider">Available GiGs</h3>
-               <button 
-                 onClick={() => {
-                   if (!user) {
-                     login();
-                     return;
-                   }
-                   setEditingGigId(null);
-                   setNewTitle('');
-                   setNewProvince('Gauteng');
-                   setNewLocation('Johannesburg');
-                   setNewPrice('R350/hr');
-                   setNewTagsStr('General, In-Person');
-                   setNewGigImageFile(null);
-                   setShowCreateModal(true);
-                 }}
-                 className="flex items-center gap-1 text-[11px] font-black uppercase tracking-wider text-white bg-teal-600 hover:bg-teal-700 px-3 py-1.5 rounded-full shadow-sm transition-all active:scale-95"
-               >
-                 <Plus className="w-3.5 h-3.5" /> Post GiG
-               </button>
-             </div>
-             <button 
-               onClick={() => setShowFilter(!showFilter)}
-               className="flex items-center gap-1 text-xs font-semibold text-teal-600 bg-teal-50 px-3 py-1.5 rounded-full border border-teal-100 hover:bg-teal-100 transition-colors max-w-[200px] sm:max-w-xs truncate"
-             >
-               <MapPin className="w-3 h-3 flex-shrink-0" />
-               <span className="truncate">{displayFilterText}</span>
-               <ChevronDown className={`w-3 h-3 ml-1 flex-shrink-0 transition-transform ${showFilter ? 'rotate-180' : ''}`} />
-             </button>
+          <div className="flex items-center justify-between px-0.5">
+            <div className="flex items-center gap-1.5">
+              <h3 className="text-[11px] font-bold text-gray-700 uppercase tracking-wider">Available GiGs</h3>
+              <button 
+                onClick={() => {
+                  if (!user) {
+                    login();
+                    return;
+                  }
+                  setEditingGigId(null);
+                  setNewTitle('');
+                  setNewProvince('Gauteng');
+                  setNewLocation('Johannesburg');
+                  setNewPrice('R350/hr');
+                  setNewTagsStr('General, In-Person');
+                  setNewGigImageFiles([]);
+                  setShowCreateModal(true);
+                }}
+                title="Post GiG"
+                aria-label="Post GiG"
+                className="w-7 h-7 flex items-center justify-center text-white bg-green-800 hover:bg-green-900 rounded-full shadow-xs transition-all active:scale-95 cursor-pointer"
+              >
+                <Plus className="w-3.5 h-3.5" />
+              </button>
+            </div>
+            <button 
+              onClick={() => setShowFilter(!showFilter)}
+              title={`Filter Location: ${displayFilterText}`}
+              aria-label={`Filter Location: ${displayFilterText}`}
+              className={`w-7 h-7 flex items-center justify-center rounded-full border transition-colors cursor-pointer relative ${
+                selectedProvince || selectedLocation 
+                  ? 'bg-green-800 text-white border-green-800 shadow-xs' 
+                  : 'bg-green-50 text-green-800 border-green-100 hover:bg-green-100'
+              }`}
+            >
+              <MapPin className="w-3.5 h-3.5" />
+              {(selectedProvince || selectedLocation) && (
+                <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 bg-amber-400 rounded-full border border-white" />
+              )}
+            </button>
           </div>
 
           <AnimatePresence>
             {showFilter && (
               <motion.div 
-                initial={{ opacity: 0, y: -10 }}
+                initial={{ opacity: 0, y: -8 }}
                 animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                className="absolute top-full mt-2 right-0 w-[90vw] max-w-sm bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden z-30"
+                exit={{ opacity: 0, y: -8 }}
+                className="absolute top-full mt-1.5 right-0 w-[90vw] max-w-xs bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden z-30"
               >
-                <div className="p-4 bg-gray-50 border-b border-gray-100 flex justify-between items-center">
-                  <h4 className="font-bold text-gray-800 text-sm">Filter Location</h4>
+                <div className="p-3 bg-gray-50 border-b border-gray-100 flex justify-between items-center">
+                  <h4 className="font-bold text-gray-800 text-xs">Filter Location</h4>
                   <button 
                     onClick={() => { setSelectedProvince(null); setSelectedLocation(null); setShowFilter(false); }}
-                    className="text-xs text-teal-600 font-semibold hover:underline"
+                    className="text-[10px] text-green-800 font-bold hover:underline"
                   >
                     Clear All
                   </button>
                 </div>
-                <div className="max-h-[50vh] overflow-y-auto p-2">
+                <div className="max-h-[45vh] overflow-y-auto p-1.5">
                   {Object.entries(SA_LOCATIONS).map(([province, locations]) => (
-                    <div key={province} className="mb-2">
+                    <div key={province} className="mb-1">
                       <button 
                         onClick={() => {
                           setSelectedProvince(province);
                           setSelectedLocation(null);
                         }}
-                        className={`w-full text-left px-3 py-2 rounded-lg text-sm font-bold flex items-center justify-between transition-colors ${selectedProvince === province ? 'bg-teal-50 text-teal-700' : 'hover:bg-gray-50 text-gray-700'}`}
+                        className={`w-full text-left px-2.5 py-1.5 rounded-lg text-xs font-bold flex items-center justify-between transition-colors ${selectedProvince === province ? 'bg-green-50 text-green-900' : 'hover:bg-gray-50 text-gray-700'}`}
                       >
                         {province}
-                        {selectedProvince === province && !selectedLocation && <Check className="w-4 h-4" />}
+                        {selectedProvince === province && !selectedLocation && <Check className="w-3.5 h-3.5" />}
                       </button>
                       
                       {selectedProvince === province && (
-                        <div className="pl-4 pr-2 mt-1 space-y-1 border-l-2 border-teal-100 ml-4">
+                        <div className="pl-3 pr-1 mt-0.5 space-y-0.5 border-l-2 border-green-100 ml-3">
                           {locations.map(loc => (
                             <button
                               key={loc}
@@ -342,10 +395,10 @@ export function GigsView({ onGigAccepted }: GigsViewProps) {
                                 setSelectedLocation(loc);
                                 setShowFilter(false);
                               }}
-                              className={`w-full text-left px-3 py-1.5 rounded-lg text-sm flex items-center justify-between transition-colors ${selectedLocation === loc ? 'bg-teal-500 text-white font-bold' : 'hover:bg-gray-50 text-gray-600 font-medium'}`}
+                              className={`w-full text-left px-2 py-1 rounded text-xs flex items-center justify-between transition-colors ${selectedLocation === loc ? 'bg-green-700 text-white font-bold' : 'hover:bg-gray-50 text-gray-600 font-medium'}`}
                             >
                               {loc}
-                              {selectedLocation === loc && <Check className="w-4 h-4" />}
+                              {selectedLocation === loc && <Check className="w-3.5 h-3.5" />}
                             </button>
                           ))}
                         </div>
@@ -359,98 +412,127 @@ export function GigsView({ onGigAccepted }: GigsViewProps) {
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3 pb-24 z-0">
-        <div className="w-full max-w-4xl mx-auto grid gap-3 md:grid-cols-2">
+      <div className="flex-1 overflow-y-auto px-3 py-3 space-y-2 pb-20 z-0">
+        <div className="w-full max-w-4xl mx-auto grid gap-2 grid-cols-2 md:grid-cols-3">
           {filteredGigs.length > 0 ? filteredGigs.map((gig) => (
-            <div key={gig.id} className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 hover:border-teal-200 hover:shadow-md transition-all flex flex-col gap-2 group relative overflow-hidden">
-              <div className="flex justify-between items-start gap-3">
-                <div className="flex items-center gap-3 min-w-0">
-                  <OwnerAvatar 
-                    ownerId={gig.ownerId} 
-                    onClick={(p) => setViewerInfo({
-                      isOpen: true,
-                      url: undefined, // profilePictureUrl
-                      title: p ? `${p.firstName} ${p.surname}` : 'Gig Owner'
-                    })} 
-                  />
-                  <h4 className="font-bold text-gray-800 text-sm truncate group-hover:text-teal-700 transition-colors">{gig.title}</h4>
-                </div>
-                <span className="font-bold text-teal-600 bg-teal-50 px-2 py-0.5 rounded-lg text-[11px] whitespace-nowrap border border-teal-100">{gig.price}</span>
-              </div>
+            <div key={gig.id} className="relative aspect-[4/5] rounded-xl shadow-xs border border-gray-100 hover:border-green-200 transition-all flex flex-col group overflow-hidden bg-gray-100">
               
-              <div className="flex items-center text-gray-500 text-[11px] gap-1.5 font-bold ml-11">
-                <MapPin className="w-3 h-3" />
-                <span>{gig.location}, {gig.province}</span>
+              {/* Background Image filling the card */}
+              <GigImageCarousel 
+                images={gig.imageUris || (gig.imageUrl ? [gig.imageUrl] : [])} 
+                title={gig.title} 
+                onClick={() => setViewerInfo({ isOpen: true, url: gig.imageUrl || gig.imageUris?.[0], imageUris: gig.imageUris || (gig.imageUrl ? [gig.imageUrl] : []), title: gig.title })} 
+              />
+
+              {/* Gradient Overlay for bottom text */}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-black/10 pointer-events-none z-10" />
+
+              {/* Top Left: Owner Avatar */}
+              <div className="absolute top-2 left-2 z-20 pointer-events-auto">
+                <OwnerAvatar 
+                  ownerId={gig.ownerId} 
+                  onClick={(p) => setViewerInfo({
+                    isOpen: true,
+                    url: undefined,
+                    title: p ? `${p.firstName} ${p.surname}` : 'Gig Owner'
+                  })} 
+                />
               </div>
 
-              {gig.imageUrl && (
-                <div 
-                  onClick={() => setViewerInfo({ isOpen: true, url: gig.imageUrl, title: gig.title })}
-                  className="ml-11 mt-1 w-full max-w-xs h-32 rounded-xl overflow-hidden border border-gray-100 cursor-pointer group/img relative shadow-sm"
-                >
-                  <SafeImage src={gig.imageUrl} alt={gig.title} className="w-full h-full object-cover group-hover/img:scale-105 transition-transform" />
-                  <div className="absolute inset-0 bg-black/10 group-hover/img:bg-transparent transition-colors" />
-                </div>
-              )}
-
-              <div className="flex justify-between items-center mt-1 ml-11">
-                <div className="flex flex-wrap gap-1.5">
-                  {(gig.tags || []).slice(0, 2).map(tag => (
-                    <span key={tag} className="text-[9px] font-black uppercase tracking-wider text-teal-700 bg-teal-50 px-2 py-0.5 rounded-full border border-teal-100">
-                      {tag}
-                    </span>
-                  ))}
+              {/* Bottom Content */}
+              <div className="absolute bottom-0 left-0 right-0 p-2 flex flex-col gap-1 z-20 pointer-events-none">
+                <div className="flex justify-between items-end gap-1">
+                  <h4 className="font-bold text-white text-xs leading-tight line-clamp-2 drop-shadow-md">{gig.title}</h4>
+                  <span className="font-black text-white bg-green-800/90 backdrop-blur-md px-1.5 py-0.5 rounded-md text-[10px] whitespace-nowrap border border-green-700/30 flex-shrink-0 shadow-lg">{gig.price}</span>
                 </div>
                 
-                {user && gig.ownerId === user.uid ? (
-                  <div className="flex items-center gap-1.5">
-                    {gig.status === 'completed' ? (
-                      <span className="bg-green-100 text-green-700 text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-lg flex items-center gap-1">
-                        <Check className="w-3.5 h-3.5" /> Completed
+                <div className="flex items-center text-gray-300 text-[9px] gap-1 font-medium">
+                  <MapPin className="w-2.5 h-2.5 flex-shrink-0" />
+                  <span className="truncate drop-shadow-md">{gig.location}, {gig.province}</span>
+                </div>
+
+                {/* Actions Row */}
+                <div className="flex justify-between items-center mt-1 pt-1 border-t border-white/20 pointer-events-auto">
+                  <div className="flex items-center gap-1 pointer-events-none">
+                    {/* Tags */}
+                    {(gig.tags || []).slice(0, 1).map(tag => (
+                      <span key={tag} className="text-[8px] font-bold uppercase tracking-wider text-white/90 bg-white/20 px-1 py-0.5 rounded-md backdrop-blur-md">
+                        {tag}
                       </span>
-                    ) : (
-                      <button
-                        onClick={() => completeGig(gig.id)}
-                        className="bg-teal-600 hover:bg-teal-700 active:scale-95 text-white text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-lg transition-all shadow-sm flex items-center gap-1"
-                      >
-                        <Check className="w-3.5 h-3.5" /> Mark Done
-                      </button>
-                    )}
-                    <button
-                      onClick={() => openEditModal(gig)}
-                      className="bg-gray-100 hover:bg-gray-200 active:scale-95 text-gray-700 text-[10px] font-black uppercase tracking-widest px-2 py-1.5 rounded-lg transition-all shadow-sm flex items-center"
-                    >
-                      <Edit2 className="w-3.5 h-3.5" />
-                    </button>
-                    <button
-                      onClick={() => handleDeleteGig(gig.id)}
-                      className="bg-red-50 hover:bg-red-100 active:scale-95 text-red-600 text-[10px] font-black uppercase tracking-widest px-2 py-1.5 rounded-lg transition-all shadow-sm flex items-center"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
+                    ))}
                   </div>
-                ) : (
-                  <button
-                    onClick={() => handleApply(gig)}
-                    disabled={applyingTo === gig.id}
-                    className="flex items-center justify-center min-w-[70px] h-7 bg-gray-900 hover:bg-black active:scale-95 text-white text-[10px] font-black uppercase tracking-widest px-3 rounded-lg transition-all disabled:opacity-50"
-                  >
-                    {applyingTo === gig.id ? (
-                      <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    ) : (
-                      'Apply'
-                    )}
-                  </button>
-                )}
+
+                  {user && gig.ownerId === user.uid ? (
+                    <div className="flex items-center gap-1 z-30">
+                      {gig.status === 'completed' ? (
+                        <span className="bg-green-500/90 text-white w-6 h-6 rounded-md flex items-center justify-center backdrop-blur-md pointer-events-none">
+                          <Check className="w-3.5 h-3.5" />
+                        </span>
+                      ) : gig.status === 'cancelled' ? (
+                        <span className="bg-red-500/90 text-white px-1.5 py-0.5 rounded-md text-[8px] font-bold uppercase tracking-wider backdrop-blur-md pointer-events-none">
+                          Cancelled
+                        </span>
+                      ) : (
+                        <>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); cancelGig(gig.id); }}
+                            title="Cancel GiG"
+                            className="bg-amber-500/90 hover:bg-amber-500 active:scale-95 text-white w-6 h-6 rounded-md flex items-center justify-center backdrop-blur-md cursor-pointer transition-transform"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); completeGig(gig.id); }}
+                            title="Mark Done"
+                            className="bg-green-700/90 hover:bg-green-700 active:scale-95 text-white w-6 h-6 rounded-md flex items-center justify-center backdrop-blur-md cursor-pointer transition-transform"
+                          >
+                            <Check className="w-3.5 h-3.5" />
+                          </button>
+                        </>
+                      )}
+                      <button
+                        onClick={(e) => { e.stopPropagation(); openEditModal(gig); }}
+                        title="Edit GiG"
+                        className="bg-white/20 hover:bg-white/30 active:scale-95 text-white w-6 h-6 rounded-md flex items-center justify-center backdrop-blur-md cursor-pointer transition-transform"
+                      >
+                        <Edit2 className="w-3 h-3" />
+                      </button>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); handleDeleteGig(gig.id); }}
+                        title="Delete GiG"
+                        className="bg-red-500/90 hover:bg-red-500 active:scale-95 text-white w-6 h-6 rounded-md flex items-center justify-center backdrop-blur-md cursor-pointer transition-transform"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); handleApply(gig); }}
+                      disabled={applyingTo === gig.id || gig.status === 'cancelled'}
+                      title={gig.status === 'cancelled' ? "Gig Cancelled" : "Apply for GiG"}
+                      className={`flex items-center justify-center px-2 py-1 h-6 rounded-md transition-all font-bold text-[9px] shadow-sm backdrop-blur-md z-30 ${
+                        gig.status === 'cancelled' 
+                          ? 'bg-gray-500/50 text-white/50 cursor-not-allowed' 
+                          : 'bg-green-700/90 hover:bg-green-700 active:scale-95 text-white cursor-pointer'
+                      }`}
+                    >
+                      {gig.status === 'cancelled' ? 'Cancelled' : (applyingTo === gig.id ? (
+                        <div className="w-2.5 h-2.5 border border-white/30 border-t-white rounded-full animate-spin" />
+                      ) : (
+                        'Apply'
+                      ))}
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
           )) : (
             <div className="col-span-full py-12 text-center flex flex-col items-center">
-              <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-                <MapPin className="w-8 h-8 text-gray-400" />
+              <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mb-3">
+                <MapPin className="w-6 h-6 text-gray-400" />
               </div>
-              <h3 className="text-lg font-bold text-gray-700">No GiGs found</h3>
-              <p className="text-sm text-gray-500 mt-1">Try selecting a different province or location.</p>
+              <h3 className="text-sm font-bold text-gray-700">No GiGs found</h3>
+              <p className="text-xs text-gray-500 mt-0.5">Try selecting a different province or location.</p>
             </div>
           )}
         </div>
@@ -465,8 +547,8 @@ export function GigsView({ onGigAccepted }: GigsViewProps) {
             className="absolute inset-0 bg-white/60 backdrop-blur-sm flex items-center justify-center z-50"
           >
              <div className="bg-white px-6 py-4 rounded-2xl shadow-xl flex flex-col items-center gap-4">
-                <div className="w-8 h-8 border-4 border-teal-200 border-t-teal-600 rounded-full animate-spin" />
-                <span className="text-base font-bold text-teal-800">Waiting for gig owner...</span>
+                <div className="w-8 h-8 border-4 border-green-200 border-t-green-800 rounded-full animate-spin" />
+                <span className="text-base font-bold text-green-950">Waiting for gig owner...</span>
              </div>
           </motion.div>
         )}
@@ -476,6 +558,7 @@ export function GigsView({ onGigAccepted }: GigsViewProps) {
         isOpen={viewerInfo.isOpen}
         onClose={() => setViewerInfo(prev => ({ ...prev, isOpen: false }))}
         imageUrl={viewerInfo.url}
+        imageUris={viewerInfo.imageUris}
         title={viewerInfo.title}
       />
 
@@ -485,20 +568,20 @@ export function GigsView({ onGigAccepted }: GigsViewProps) {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="absolute inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+            className="absolute inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center z-50 p-3"
           >
             <motion.div
-              initial={{ scale: 0.9, y: 20 }}
+              initial={{ scale: 0.9, y: 15 }}
               animate={{ scale: 1, y: 0 }}
-              exit={{ scale: 0.9, y: 20 }}
-              className="bg-white w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden border border-gray-100 flex flex-col max-h-[90vh]"
+              exit={{ scale: 0.9, y: 15 }}
+              className="bg-white w-full max-w-sm rounded-2xl shadow-xl overflow-hidden border border-gray-100 flex flex-col max-h-[85vh]"
             >
-              <div className="px-6 py-4 bg-gray-50 border-b border-gray-100 flex items-center justify-between">
-                <h3 className="font-black text-gray-900 uppercase tracking-wider text-sm flex items-center gap-2">
+              <div className="px-4 py-3 bg-gray-50 border-b border-gray-100 flex items-center justify-between">
+                <h3 className="font-bold text-gray-900 uppercase tracking-wider text-xs flex items-center gap-1.5">
                   {editingGigId ? (
-                    <><Edit2 className="w-4 h-4 text-teal-600" /> Edit GiG</>
+                    <><Edit2 className="w-3.5 h-3.5 text-green-800" /> Edit GiG</>
                   ) : (
-                    <><Plus className="w-4 h-4 text-teal-600" /> Post a New GiG</>
+                    <><Plus className="w-3.5 h-3.5 text-green-800" /> Post a New GiG</>
                   )}
                 </h3>
                 <button 
@@ -508,33 +591,33 @@ export function GigsView({ onGigAccepted }: GigsViewProps) {
                   }}
                   className="p-1 rounded-full text-gray-400 hover:bg-gray-200"
                 >
-                  <X className="w-5 h-5" />
+                  <X className="w-4 h-4" />
                 </button>
               </div>
 
-              <form onSubmit={handleSaveGig} className="p-6 space-y-4 overflow-y-auto">
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-gray-600 uppercase">GiG Title</label>
+              <form onSubmit={handleSaveGig} className="p-4 space-y-3 overflow-y-auto">
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">GiG Title</label>
                   <input 
                     type="text"
                     required
                     value={newTitle}
                     onChange={e => setNewTitle(e.target.value)}
                     placeholder="e.g. Expert Graphic Designer Needed"
-                    className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-teal-600 font-medium"
+                    className="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-xs outline-none focus:border-green-800 font-medium"
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-gray-600 uppercase">Province</label>
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Province</label>
                     <select
                       value={newProvince}
                       onChange={e => {
                         setNewProvince(e.target.value);
                         setNewLocation(SA_LOCATIONS[e.target.value]?.[0] || e.target.value);
                       }}
-                      className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-teal-600 font-medium"
+                      className="w-full bg-gray-50 border border-gray-200 rounded-lg px-2.5 py-2 text-xs outline-none focus:border-green-800 font-medium"
                     >
                       {Object.keys(SA_LOCATIONS).map(prov => (
                         <option key={prov} value={prov}>{prov}</option>
@@ -542,12 +625,12 @@ export function GigsView({ onGigAccepted }: GigsViewProps) {
                     </select>
                   </div>
 
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-gray-600 uppercase">Location / City</label>
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Location / City</label>
                     <select
                       value={newLocation}
                       onChange={e => setNewLocation(e.target.value)}
-                      className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-teal-600 font-medium"
+                      className="w-full bg-gray-50 border border-gray-200 rounded-lg px-2.5 py-2 text-xs outline-none focus:border-green-800 font-medium"
                     >
                       {(SA_LOCATIONS[newProvince] || [newProvince]).map(loc => (
                         <option key={loc} value={loc}>{loc}</option>
@@ -556,63 +639,79 @@ export function GigsView({ onGigAccepted }: GigsViewProps) {
                   </div>
                 </div>
 
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-gray-600 uppercase flex items-center gap-2">
-                    <ImageIcon className="w-4 h-4 text-teal-600" /> GiG Image (Optional)
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider flex items-center gap-1.5">
+                    <ImageIcon className="w-3.5 h-3.5 text-green-800" /> GiG Images (Multiple Allowed)
                   </label>
                   <input 
                     type="file"
                     accept="image/*"
-                    onChange={e => setNewGigImageFile(e.target.files?.[0] || null)}
-                    className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2 text-xs outline-none focus:border-teal-600 font-medium file:mr-4 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-teal-50 file:text-teal-700 hover:file:bg-teal-100"
+                    multiple
+                    onChange={e => {
+                      if (e.target.files) {
+                        setNewGigImageFiles(prev => [...prev, ...Array.from(e.target.files!)]);
+                      }
+                    }}
+                    className="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-1.5 text-xs outline-none focus:border-green-800 font-medium file:mr-2 file:py-0.5 file:px-2.5 file:rounded-md file:border-0 file:text-[11px] file:font-bold file:bg-green-50 file:text-green-900 hover:file:bg-green-100"
                   />
-                  {newGigImageFile && (
-                    <div className="relative w-16 h-16 rounded-xl overflow-hidden border border-gray-200 mt-1">
-                      <img src={URL.createObjectURL(newGigImageFile)} alt="Preview" className="w-full h-full object-cover" />
+                  {newGigImageFiles.length > 0 && (
+                    <div className="flex gap-1.5 overflow-x-auto py-1">
+                      {newGigImageFiles.map((file, idx) => (
+                        <div key={idx} className="relative w-12 h-12 rounded-lg overflow-hidden border border-gray-200 flex-shrink-0 group">
+                          <img src={URL.createObjectURL(file)} alt="Preview" className="w-full h-full object-cover" />
+                          <button
+                            type="button"
+                            onClick={() => setNewGigImageFiles(prev => prev.filter((_, i) => i !== idx))}
+                            className="absolute top-0 right-0 bg-red-500/80 text-white p-0.5 rounded-bl-lg backdrop-blur-sm shadow-sm"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        </div>
+                      ))}
                     </div>
                   )}
                 </div>
 
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-gray-600 uppercase">Price / Budget</label>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Price / Budget</label>
                   <input 
                     type="text"
                     required
                     value={newPrice}
                     onChange={e => setNewPrice(e.target.value)}
                     placeholder="e.g. R450/hr or R2500/job"
-                    className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-teal-600 font-medium"
+                    className="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-xs outline-none focus:border-green-800 font-medium"
                   />
                 </div>
 
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-gray-600 uppercase">Tags (comma separated)</label>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Tags (comma separated)</label>
                   <input 
                     type="text"
                     value={newTagsStr}
                     onChange={e => setNewTagsStr(e.target.value)}
                     placeholder="Design, Remote, Urgent"
-                    className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-teal-600 font-medium"
+                    className="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-xs outline-none focus:border-green-800 font-medium"
                   />
                 </div>
 
-                <div className="pt-4 flex gap-3">
+                <div className="pt-2 flex gap-2">
                   <button
                     type="button"
                     onClick={() => {
                       setShowCreateModal(false);
                       setEditingGigId(null);
                     }}
-                    className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 py-3 rounded-xl text-xs font-black uppercase tracking-wider transition-all"
+                    className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
                     disabled={creating}
-                    className="flex-1 bg-teal-600 hover:bg-teal-700 text-white py-3 rounded-xl text-xs font-black uppercase tracking-wider shadow-lg shadow-teal-600/20 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                    className="flex-1 bg-green-800 hover:bg-green-900 text-white py-2 rounded-lg text-xs font-bold uppercase tracking-wider shadow-xs transition-all flex items-center justify-center gap-1.5 disabled:opacity-50"
                   >
-                    {creating && <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />}
+                    {creating && <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />}
                     {editingGigId ? 'Save Changes' : 'Publish GiG'}
                   </button>
                 </div>

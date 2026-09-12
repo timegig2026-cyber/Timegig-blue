@@ -1,6 +1,7 @@
 export interface Gig {
   id: string;
   title: string;
+  description?: string;
   province: string;
   location: string;
   price: string;
@@ -8,6 +9,18 @@ export interface Gig {
   lat: number;
   lng: number;
   ownerId: string;
+  ownerName?: string;
+  ownerEmail?: string;
+  ownerAvatar?: string;
+  ownerPhone?: string;
+  ownerDisabled?: boolean;
+  status?: 'active' | 'completed' | 'paused' | 'cancelled';
+  cancellationReason?: string;
+  cancelledBy?: string;
+  imageUrl?: string;
+  imageUris?: string[];
+  timestamp?: any;
+  createdAt?: any;
 }
 
 export interface UserProfile {
@@ -31,6 +44,8 @@ export interface UserProfile {
   certificates: string[];
   province: string;
   isOnline: boolean;
+  isDisabled?: boolean;
+  disabledAt?: any;
   isAdmin?: boolean;
   status: 'pending' | 'reviewed' | 'incomplete';
   updatedAt: any;
@@ -40,14 +55,23 @@ export interface UserProfile {
     expiresAt: any;
     proofOfPaymentName?: string;
     proofOfPaymentUrl?: string;
+    amount?: number;
+    reference?: string;
+    updatedAt?: any;
+    submittedAt?: any;
   };
 }
 
 export interface SubscriptionPayment {
   id?: string;
   userId: string;
+  userName?: string;
+  userEmail?: string;
   amount: number;
   reference: string;
+  bankName?: string;
+  accountName?: string;
+  accountNumber?: string;
   timestamp: any;
   status: 'pending' | 'verified' | 'rejected';
   proofOfPaymentName: string;
@@ -61,6 +85,14 @@ export interface HireRequest {
   status: 'pending' | 'accepted' | 'declined' | 'expired';
   createdAt: any;
   expiresAt: any;
+  gigId?: string;
+  gigTitle?: string;
+  destination?: {
+    lat: number;
+    lng: number;
+    title?: string;
+    location?: string;
+  };
 }
 
 export interface AppNotification {

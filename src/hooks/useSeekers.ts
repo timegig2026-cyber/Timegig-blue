@@ -30,6 +30,9 @@ export function useSeekers() {
         ...doc.data()
       })) as UserProfile[];
 
+      // Filter out any disabled profiles
+      seekersData = seekersData.filter(s => !s.isDisabled);
+
       // If no real seekers exist, we can show mock data in the UI without saving to DB
       if (seekersData.length === 0) {
         seekersData = MOCK_SEEKERS.map((s, i) => ({
@@ -51,7 +54,18 @@ export function useSeekers() {
     return unsubscribe;
   }, []);
 
-  const initiateHire = async (seekerId: string, hirerId: string) => {
+  const initiateHire = async (
+    seekerId: string, 
+    hirerId: string, 
+    gigInfo?: {
+      gigId?: string;
+      gigTitle?: string;
+      province?: string;
+      location?: string;
+      lat?: number;
+      lng?: number;
+    }
+  ) => {
     try {
       const createdAt = new Date();
       const expiresAt = new Date(createdAt.getTime() + 60000); // 60 seconds
@@ -61,7 +75,15 @@ export function useSeekers() {
         hirerId,
         status: 'pending',
         createdAt: serverTimestamp(),
-        expiresAt: expiresAt
+        expiresAt: expiresAt,
+        gigId: gigInfo?.gigId || '',
+        gigTitle: gigInfo?.gigTitle || 'Priority On-Site Job Assignment',
+        destination: {
+          lat: gigInfo?.lat ?? -26.2041,
+          lng: gigInfo?.lng ?? 28.0473,
+          title: gigInfo?.gigTitle || 'Gig Destination',
+          location: gigInfo?.location || (gigInfo?.province ? `${gigInfo.province}, South Africa` : 'Johannesburg, Gauteng')
+        }
       });
 
       return hireRef.id;

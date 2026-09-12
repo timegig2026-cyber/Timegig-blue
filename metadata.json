@@ -1,6 +1,6 @@
 {
   "name": "GiG South Africa",
-  "description": "Find and apply for local gigs across South Africa with real-time navigation and voice guidance.",
+  "description": "Find and apply for local gigs across South Africa with real-time navigation and premium subscription features.",
   "requestFramePermissions": ["geolocation"],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

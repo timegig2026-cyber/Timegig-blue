@@ -154,3 +154,34 @@ export async function compressImage(input: any, maxWidth = 600, quality = 0.4): 
     };
   });
 }
+
+/**
+ * Safely validates and returns an image URL string.
+ * - Accepts only valid non-empty strings (HTTP/HTTPS URLs, valid data URLs).
+ * - Rejects objects, File/Blob instances, transient blob URLs, null, undefined, and malformed values.
+ */
+export function getSafeImageUrl(value: any): string | null {
+  if (!value) return null;
+  if (typeof value !== 'string') {
+    return null;
+  }
+  const trimmed = value.trim();
+  if (trimmed === '' || trimmed === 'undefined' || trimmed === 'null') {
+    return null;
+  }
+  // Transient blob URLs do not persist across page refreshes
+  if (trimmed.startsWith('blob:') || trimmed.startsWith('objecturl:')) {
+    return null;
+  }
+  if (trimmed.startsWith('http://') || trimmed.startsWith('https://') || trimmed.startsWith('data:image/')) {
+    return trimmed;
+  }
+  if (trimmed.startsWith('data:')) {
+    return trimmed;
+  }
+  if (trimmed.length > 50 && !trimmed.includes(' ') && !trimmed.includes('/')) {
+    return `data:image/jpeg;base64,${trimmed}`;
+  }
+  return null;
+}
+
